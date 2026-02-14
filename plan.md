@@ -25,6 +25,20 @@
 - [x] Sub-millisecond performance for typical graphs (10-50 nodes)
 - [x] Complexity: O(N² log N) for N nodes
 
+### Edge Separation (Overlap Prevention)
+
+- [ ] New function `separateOverlappingEdges(edgePaths, separation)` — post-process all computed paths to prevent visual merging
+- [ ] **Segment extraction** — for each edge path, extract horizontal and vertical segments from the routable portion (between source stub end and target stub start); stub segments are excluded from nudging
+- [ ] **Overlap detection** — two segments from different edges overlap when:
+  - Both are horizontal with the same Y coordinate and their X ranges intersect (including touching)
+  - Both are vertical with the same X coordinate and their Y ranges intersect (including touching)
+- [ ] **Grouping** — group all overlapping collinear segments by their shared coordinate (e.g., all horizontal segments at Y=200 with overlapping X ranges)
+- [ ] **Center-spread offset assignment** — for N edges sharing a segment, assign offsets: `(index - (N-1)/2) * edgeSeparation`. E.g., for 3 edges: offsets are `-5, 0, +5` (with edgeSeparation=5)
+- [ ] **Offset application** — horizontal segments are offset perpendicular (in Y direction), vertical segments are offset perpendicular (in X direction)
+- [ ] **Path reconstruction** — after offsetting segments, reconnect adjacent segments by adjusting shared junction points; the orthogonal nature of the path is preserved since vertical segments bridge between offset horizontal segments and vice versa
+- [ ] Stubs (mandatory vertical segments at source/target ports) are NOT nudged — only the routed middle portion is separated
+- [ ] Scope: all overlaps across all edges are handled, regardless of whether edges share source/target nodes
+
 ---
 
 ## 2. Configuration (`lib/defaults.js`)
@@ -37,6 +51,8 @@
 - [x] `nodeHeight` (default: 60) — fallback node height before measurement
 - [x] `edgeStrokeColor` (default: '#555') — default edge color
 - [x] `edgeStrokeWidth` (default: 1.5) — default edge thickness
+- [ ] `edgeSeparation` (default: 5) — px gap between parallel/overlapping edges for visual distinction
+- [ ] `bendRadius` (default: 8) — px radius for rounded corners at 90° edge bends
 
 ### Configuration Override Levels
 
@@ -57,28 +73,46 @@
 
 ---
 
-## 4. Custom Edge (`lib/OrthogonalEdge.jsx`)
+## 4. Edge Routing Provider (`lib/EdgeRoutingProvider.jsx`) — NEW
 
-- [x] Uses `useNodes()` from reactflow for real-time re-routing during node drag
-- [x] Converts nodes to simple `{id, x, y, width, height}` rectangles
-- [x] Excludes source and target nodes from obstacle list
-- [x] Calls `computeOrthogonalPath()` with source/target positions, all node rects, and config
-- [x] Renders via `<BaseEdge>` from reactflow with arrowhead marker support
-- [x] Supports per-edge config override via `data.routingConfig`
+- [ ] React context (`EdgeRoutingContext`) that stores a map of `edgeId → { path, points }`
+- [ ] `EdgeRoutingProvider` component — must be placed as a child of `<ReactFlow>`
+- [ ] Uses `useStore` from reactflow to access `nodeInternals` (node positions + `handleBounds`)
+- [ ] Uses `useEdges()` from reactflow to get all edge definitions
+- [ ] For each edge, computes source/target handle positions from `handleBounds`:
+  - `absoluteX = node.positionAbsolute.x + handle.x + handle.width / 2`
+  - `absoluteY = node.positionAbsolute.y + handle.y + handle.height / 2`
+- [ ] Fallback handle position computation when `handleBounds` not yet measured (uses port formula `((i+1) / (N+1)) * nodeWidth` + node data)
+- [ ] Builds obstacle rectangles from all nodes, excluding source/target per edge
+- [ ] Calls `computeOrthogonalPath()` for every edge in a single pass
+- [ ] Calls `separateOverlappingEdges()` on all computed paths to apply edge separation
+- [ ] Results memoized via `useMemo` — recomputes only when node positions or edge connections change
+- [ ] Real-time re-routing during node drag (provider recomputes on every position change)
 
 ---
 
-## 5. Public API (`lib/index.js`)
+## 5. Custom Edge (`lib/OrthogonalEdge.jsx`)
+
+- [x] Renders via `<BaseEdge>` from reactflow with arrowhead marker support
+- [x] Supports per-edge config override via `data.routingConfig`
+- [ ] **Changed**: reads pre-computed separated path from `EdgeRoutingContext` instead of computing independently
+- [ ] **Fallback**: if no `EdgeRoutingProvider` is present (context is empty), falls back to independent `computeOrthogonalPath()` call (backwards compatibility)
+- [x] Converts nodes to simple `{id, x, y, width, height}` rectangles (used in fallback mode only)
+
+---
+
+## 6. Public API (`lib/index.js`)
 
 - [x] Export `OrthogonalEdge` — custom edge component
 - [x] Export `SquareNode` — custom node component
 - [x] Export `computeOrthogonalPath` — standalone routing function
 - [x] Export `waypointsToSvgPath` — SVG path string generator
 - [x] Export `DEFAULTS` — configuration constants
+- [ ] Export `EdgeRoutingProvider` — context provider for centralized edge routing with separation
 
 ---
 
-## 6. Example App (`example/`)
+## 7. Example App (`example/`)
 
 ### Stack
 
@@ -124,7 +158,21 @@
 
 ---
 
-## 7. Technical Constraints
+## 8. Rounded Corners on Edge Bends — NEW
+
+- [ ] `bendRadius` config option (default: 8) — px radius for rounded corners at each 90° bend
+- [ ] Modify `waypointsToSvgPath()` to generate SVG arc commands (`A`) or quadratic bezier (`Q`) at bend points instead of sharp `L` corners
+- [ ] For each bend point (where direction changes from horizontal↔vertical):
+  - Shorten the incoming segment by `bendRadius` px before the bend
+  - Shorten the outgoing segment by `bendRadius` px after the bend
+  - Insert a rounded arc connecting the two shortened endpoints
+- [ ] Guard: if a segment is shorter than `2 * bendRadius`, clamp the radius to half the segment length to prevent overlapping arcs
+- [ ] Straight segments (no direction change) are unaffected
+- [ ] Works with edge separation — rounded corners apply after overlap nudging
+
+---
+
+## 9. Technical Constraints
 
 - [x] React Flow v11 — package `reactflow` (not `@xyflow/react`)
 - [x] `node.width` / `node.height` set directly (not under `node.measured`)
@@ -134,10 +182,11 @@
 - [x] Edges must never cross through nodes
 - [x] Edges must maintain configurable padding around nodes
 - [x] All routing recalculates in real-time during node drag
+- [ ] Edges sharing the same path segment must remain visually distinct (never merge into a single line)
 
 ---
 
-## 8. Verification Checklist
+## 10. Verification Checklist
 
 - [x] `cd example && npm install && npm run dev` starts on localhost
 - [ ] Pre-loaded graph renders with all 6 edges routing orthogonally around nodes
@@ -147,14 +196,30 @@
 - [ ] Connect two nodes by dragging handle-to-handle — new orthogonal edge appears
 - [ ] Select node/edge and click "Remove Selected" — removes correctly
 - [ ] Edge N1→N5 routes around N2, N3, N4 with visible padding gaps
+- [ ] Edges that share a common segment are visually separated (not drawn on top of each other)
+- [ ] Overlapping edges show center-spread offset with configurable gap
+- [ ] Edge bends have rounded corners (not sharp 90° angles)
+- [ ] Rounded corners degrade gracefully on short segments (radius clamped)
 
 ---
 
-## 9. Future Requirements
+## 11. Implementation Order
+
+1. [ ] Add `edgeSeparation` and `bendRadius` to `DEFAULTS` in `lib/defaults.js`
+2. [ ] Add `separateOverlappingEdges()` function to `lib/orthogonalRouter.js`
+3. [ ] Update `waypointsToSvgPath()` in `lib/orthogonalRouter.js` to support rounded corners via `bendRadius`
+4. [ ] Create `lib/EdgeRoutingProvider.jsx` — centralized path computation + separation + rounding
+5. [ ] Modify `lib/OrthogonalEdge.jsx` — read from context, fallback to standalone computation
+6. [ ] Update `lib/index.js` — export `EdgeRoutingProvider`
+7. [ ] Update `example/src/App.jsx` — add `<EdgeRoutingProvider>` inside `<ReactFlow>`
+8. [ ] Test all verification checklist items
+
+---
+
+## 12. Future Requirements
 
 <!-- Add new requirements below. Use [ ] for planned items. -->
 <!-- Example:
-- [ ] Rounded corners on edge bends
 - [ ] Edge labels at midpoint
 - [ ] Animated edge drawing
 - [ ] Export/import graph as JSON

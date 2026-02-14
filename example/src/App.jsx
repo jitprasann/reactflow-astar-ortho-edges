@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import ReactFlow, {
+  ReactFlowProvider,
   Controls,
   Background,
   addEdge,
@@ -9,7 +10,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { OrthogonalEdge, SquareNode } from '../../lib/index.js';
+import { OrthogonalEdge, SquareNode, EdgeRoutingProvider } from '../../lib/index.js';
 
 const nodeTypes = { square: SquareNode };
 const edgeTypes = { orthogonal: OrthogonalEdge };
@@ -68,7 +69,7 @@ const initialEdges = [
 
 let nodeIdCounter = 6;
 
-export default function App() {
+function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
@@ -135,5 +136,15 @@ export default function App() {
         <Background />
       </ReactFlow>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ReactFlowProvider>
+      <EdgeRoutingProvider>
+        <Flow />
+      </EdgeRoutingProvider>
+    </ReactFlowProvider>
   );
 }
