@@ -15,11 +15,20 @@ export function useEdgeRouting(edgeId) {
   return ctx.get(edgeId) || null;
 }
 
+// Map React Flow Position strings to stub directions
+const POSITION_TO_DIR = {
+  top: 'top',
+  bottom: 'bottom',
+  left: 'left',
+  right: 'right',
+};
+
 /**
- * Resolve handle position from nodeInternals handleBounds (DOM-measured).
+ * Resolve handle position and direction from nodeInternals handleBounds.
  * Falls back to port formula when handleBounds is unavailable.
+ * Returns { x, y, dir } where dir is the stub direction.
  */
-function getHandlePosition(node, handleId, handleType, cfg) {
+function getHandleInfo(node, handleId, handleType, cfg) {
   const nodeX = node.positionAbsolute?.x ?? node.position.x;
   const nodeY = node.positionAbsolute?.y ?? node.position.y;
   const nodeWidth = node.width ?? node.data?.width ?? cfg.nodeWidth;
@@ -35,6 +44,7 @@ function getHandlePosition(node, handleId, handleType, cfg) {
         return {
           x: nodeX + handle.x + handle.width / 2,
           y: nodeY + handle.y + handle.height / 2,
+          dir: POSITION_TO_DIR[handle.position] || (handleType === 'source' ? 'bottom' : 'top'),
         };
       }
     }
@@ -48,13 +58,51 @@ function getHandlePosition(node, handleId, handleType, cfg) {
     return {
       x: nodeX + ((idx + 1) / (total + 1)) * nodeWidth,
       y: nodeY + nodeHeight,
+      dir: 'bottom',
     };
   } else {
     const total = node.data?.inputs || 1;
     return {
       x: nodeX + ((idx + 1) / (total + 1)) * nodeWidth,
       y: nodeY,
+      dir: 'top',
     };
+  }
+}
+
+/**
+ * For merge nodes (entire circle = single handle), determine the entry point
+ * and direction based on where the source node sits relative to the merge.
+ * - Source to the left → enter from left side
+ * - Source to the right → enter from right side
+ * - Source roughly centered above → enter from top
+ */
+function getMergeTargetInfo(sourceNode, mergeNode, cfg) {
+  const srcX = sourceNode.positionAbsolute?.x ?? sourceNode.position.x;
+  const srcW = sourceNode.width ?? sourceNode.data?.width ?? cfg.nodeWidth;
+  const srcCenterX = srcX + srcW / 2;
+
+  const tgtX = mergeNode.positionAbsolute?.x ?? mergeNode.position.x;
+  const tgtY = mergeNode.positionAbsolute?.y ?? mergeNode.position.y;
+  const tgtW = mergeNode.width ?? mergeNode.data?.width ?? 40;
+  const tgtH = mergeNode.height ?? mergeNode.data?.height ?? 40;
+  const tgtCenterX = tgtX + tgtW / 2;
+  const tgtCenterY = tgtY + tgtH / 2;
+  const radius = tgtW / 2;
+
+  const dx = srcCenterX - tgtCenterX;
+  // Threshold: if source center is within half the merge width, treat as "above"
+  const threshold = tgtW / 2;
+
+  if (dx < -threshold) {
+    // Source is to the left → enter from left
+    return { x: tgtX, y: tgtCenterY, dir: 'left' };
+  } else if (dx > threshold) {
+    // Source is to the right → enter from right
+    return { x: tgtX + tgtW, y: tgtCenterY, dir: 'right' };
+  } else {
+    // Source is roughly centered → enter from top
+    return { x: tgtCenterX, y: tgtY, dir: 'top' };
   }
 }
 
@@ -84,18 +132,15 @@ export default function EdgeRoutingProvider({ children, config }) {
       const targetNode = nodeInternals.get(edge.target);
       if (!sourceNode || !targetNode) continue;
 
-      const { x: sourceX, y: sourceY } = getHandlePosition(
-        sourceNode,
-        edge.sourceHandle,
-        'source',
-        cfg
-      );
-      const { x: targetX, y: targetY } = getHandlePosition(
-        targetNode,
-        edge.targetHandle,
-        'target',
-        cfg
-      );
+      const srcInfo = getHandleInfo(sourceNode, edge.sourceHandle, 'source', cfg);
+      let tgtInfo;
+
+      // Merge node: dynamically compute entry side based on source position
+      if (targetNode.data?.isMerge) {
+        tgtInfo = getMergeTargetInfo(sourceNode, targetNode, cfg);
+      } else {
+        tgtInfo = getHandleInfo(targetNode, edge.targetHandle, 'target', cfg);
+      }
 
       // Build obstacle list excluding source and target nodes
       const obstacles = [];
@@ -110,12 +155,17 @@ export default function EdgeRoutingProvider({ children, config }) {
         });
       }
 
-      const edgeCfg = { ...cfg, ...(edge.data?.routingConfig || {}) };
+      const edgeCfg = {
+        ...cfg,
+        ...(edge.data?.routingConfig || {}),
+        sourceDir: srcInfo.dir,
+        targetDir: tgtInfo.dir,
+      };
       const { points } = computeOrthogonalPath(
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
+        srcInfo.x,
+        srcInfo.y,
+        tgtInfo.x,
+        tgtInfo.y,
         obstacles,
         edgeCfg
       );

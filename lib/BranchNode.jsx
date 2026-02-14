@@ -1,22 +1,33 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { Handle, Position } from 'reactflow';
-import { DEFAULTS } from './defaults.js';
 import AddNodeMenu from './AddNodeMenu.jsx';
 
-const SquareNode = memo(function SquareNode({ id, data, selected }) {
-  const width = data.width || DEFAULTS.nodeWidth;
-  const height = data.height || DEFAULTS.nodeHeight;
+const BranchNode = memo(function BranchNode({ id, data, selected }) {
+  const width = data.width || 150;
+  const height = data.height || 60;
   const label = data.label || '';
-  const inputs = data.inputs || 0;
-  const outputs = data.outputs || 0;
+  const inputs = data.inputs || 1;
+  const outputs = data.outputs || 2;
+  const collapsed = !!data.collapsed;
+  const onToggleCollapse = data.onToggleCollapse;
+
+  const handleToggle = useCallback(
+    (e) => {
+      e.stopPropagation();
+      if (onToggleCollapse) {
+        onToggleCollapse(id, !collapsed);
+      }
+    },
+    [id, collapsed, onToggleCollapse]
+  );
 
   return (
     <div
       style={{
         width,
         height,
-        background: selected ? '#e3f2fd' : '#fff',
-        border: selected ? '2px solid #1976d2' : '1px solid #999',
+        background: selected ? '#e3f2fd' : '#e8f5e9',
+        border: selected ? '2px solid #1976d2' : '1px solid #4caf50',
         borderRadius: 4,
         display: 'flex',
         alignItems: 'center',
@@ -58,9 +69,31 @@ const SquareNode = memo(function SquareNode({ id, data, selected }) {
           }}
         />
       ))}
+      <button
+        onClick={handleToggle}
+        style={{
+          position: 'absolute',
+          bottom: 2,
+          right: 2,
+          width: 18,
+          height: 18,
+          padding: 0,
+          border: '1px solid #999',
+          borderRadius: 3,
+          background: '#fff',
+          cursor: 'pointer',
+          fontSize: 12,
+          lineHeight: '16px',
+          textAlign: 'center',
+          color: '#333',
+        }}
+        title={collapsed ? 'Expand' : 'Collapse'}
+      >
+        {collapsed ? '+' : '\u2212'}
+      </button>
       {data.onAddNode && <AddNodeMenu nodeId={id} onAddNode={data.onAddNode} />}
     </div>
   );
 });
 
-export default SquareNode;
+export default BranchNode;

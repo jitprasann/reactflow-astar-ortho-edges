@@ -3,7 +3,10 @@
     "allow": [
       "Bash(test:*)",
       "WebFetch(domain:reactflow.dev)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:eclipse.dev)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

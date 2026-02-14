@@ -9,6 +9,7 @@ export default defineConfig({
       reactflow: path.resolve(__dirname, 'node_modules/reactflow'),
       react: path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      elkjs: path.resolve(__dirname, 'node_modules/elkjs'),
     },
   },
 });
