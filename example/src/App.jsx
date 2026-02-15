@@ -138,14 +138,33 @@ function Flow() {
 
     const { layoutAll, addNodes } = useAutoLayout();
 
-    // Toggle collapse
-    const onToggleCollapse = useCallback((nodeId, collapsed) => {
-        setAllNodes((nds) =>
-            nds.map((n) =>
-                n.id === nodeId ? { ...n, data: { ...n.data, collapsed } } : n,
-            ),
-        );
-    }, []);
+    // Toggle collapse — re-layout visible graph so gaps close/open
+    const onToggleCollapse = useCallback(
+        async (nodeId, collapsed) => {
+            const updatedNodes = allNodes.map((n) =>
+                n.id === nodeId
+                    ? { ...n, data: { ...n.data, collapsed } }
+                    : n,
+            );
+
+            // Compute visible subset and re-layout to close/open gaps
+            const { visibleNodes: vNodes, visibleEdges: vEdges } =
+                getVisibleGraph(updatedNodes, allEdges);
+            const positioned = await layoutAll(vNodes, vEdges);
+
+            // Merge new positions back into the full node list
+            const posMap = new Map(
+                positioned.map((n) => [n.id, n.position]),
+            );
+            setAllNodes(
+                updatedNodes.map((n) => {
+                    const pos = posMap.get(n.id);
+                    return pos ? { ...n, position: pos } : n;
+                }),
+            );
+        },
+        [allNodes, allEdges, layoutAll],
+    );
 
     // Add node/branch below a parent
     const onAddNode = useCallback(
