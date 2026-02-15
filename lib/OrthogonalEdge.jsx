@@ -24,9 +24,11 @@ export default function OrthogonalEdge({
   // Fallback: compute independently when no provider is present
   const nodes = useNodes();
   let edgePath;
+  let edgePoints;
 
   if (routed) {
     edgePath = routed.path;
+    edgePoints = routed.points;
   } else {
     const allRects = nodes
       .filter((n) => n.id !== source && n.id !== target)
@@ -46,8 +48,27 @@ export default function OrthogonalEdge({
       allRects,
       cfg
     );
+    edgePoints = points;
     edgePath = waypointsToSvgPath(points, cfg.bendRadius || 0);
   }
+
+  // --- Edge label ---
+  const label = data?.label;
+  let labelX, labelY;
+
+  if (label && edgePoints && edgePoints.length >= 2) {
+    // Position on the last vertical segment (target stub start → target port)
+    const last = edgePoints.length - 1;
+    labelX = edgePoints[last].x;
+    labelY = (edgePoints[last - 1].y + edgePoints[last].y) / 2 + cfg.edgeLabelOffset;
+  }
+
+  // Wrap in a span when user provides a CSS class
+  const labelContent = label
+    ? (data?.labelClassName
+        ? <span className={data.labelClassName}>{label}</span>
+        : label)
+    : undefined;
 
   return (
     <BaseEdge
@@ -59,6 +80,19 @@ export default function OrthogonalEdge({
         strokeWidth: cfg.edgeStrokeWidth,
         ...style,
       }}
+      label={labelContent}
+      labelX={labelX}
+      labelY={labelY}
+      labelStyle={{
+        fontSize: cfg.edgeLabelFontSize,
+        ...(data?.labelStyle || {}),
+      }}
+      labelShowBg={!!label}
+      labelBgStyle={{
+        fill: cfg.edgeLabelBackground,
+      }}
+      labelBgPadding={[2, 4]}
+      labelBgBorderRadius={2}
     />
   );
 }

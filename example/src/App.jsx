@@ -27,7 +27,7 @@ const nodeTypes = {
 };
 const edgeTypes = { orthogonal: OrthogonalEdge };
 
-const makeEdge = (id, source, sourceHandle, target, targetHandle) => ({
+const makeEdge = (id, source, sourceHandle, target, targetHandle, data) => ({
     id,
     source,
     sourceHandle,
@@ -35,6 +35,7 @@ const makeEdge = (id, source, sourceHandle, target, targetHandle) => ({
     targetHandle,
     type: "orthogonal",
     markerEnd: { type: MarkerType.ArrowClosed },
+    ...(data ? { data } : {}),
 });
 
 // Branching flow: Start -> Branch -> (If, ElseIf, Else) -> Merge -> End
@@ -110,15 +111,16 @@ const rawNodes = [
 
 const rawEdges = [
     makeEdge("e-start-branch", "start", "output-0", "branch1", "input-0"),
-    makeEdge("e-branch-if", "branch1", "output-0", "if-node", "input-0"),
+    makeEdge("e-branch-if", "branch1", "output-0", "if-node", "input-0", { label: "If" }),
     makeEdge(
         "e-branch-elseif",
         "branch1",
         "output-1",
         "elseif-node",
         "input-0",
+        { label: "Else If" },
     ),
-    makeEdge("e-branch-else", "branch1", "output-2", "else-node", "input-0"),
+    makeEdge("e-branch-else", "branch1", "output-2", "else-node", "input-0", { label: "Else" }),
     // All branches connect to merge's single handle — router picks entry side dynamically
     makeEdge("e-if-merge", "if-node", "output-0", "merge1", "input-0"),
     makeEdge("e-elseif-merge", "elseif-node", "output-0", "merge1", "input-0"),
@@ -296,6 +298,7 @@ function Flow() {
                         "output-0",
                         ifId,
                         "input-0",
+                        { label: "If" },
                     ),
                     makeEdge(
                         nextId("e"),
@@ -303,6 +306,7 @@ function Flow() {
                         "output-1",
                         elseId,
                         "input-0",
+                        { label: "Else" },
                     ),
                     makeEdge(nextId("e"), ifId, "output-0", mergeId, "input-0"),
                     makeEdge(

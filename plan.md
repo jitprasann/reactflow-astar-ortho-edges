@@ -388,11 +388,87 @@
 
 ---
 
-## 13. Future Requirements
+## 13. Edge Labels (`lib/OrthogonalEdge.jsx`)
+
+### Overview
+
+- [ ] Display text labels on edges, positioned on the first vertical segment (stub going down from source handle)
+- [ ] Generic library feature — any edge can have a label via `edge.data.label`
+- [ ] Primary use case: branch node output edges labeled "If", "Else If", "Else"
+
+### Label Data
+
+- [ ] User passes label as `edge.data.label` (string)
+- [ ] If `data.label` is falsy/absent, no label is rendered
+- [ ] Example: `makeEdge(..., { label: 'If' })`
+
+### Label Positioning
+
+- [ ] Label appears on the **first vertical segment** of the edge (the source stub, from source handle going down)
+- [ ] Centered horizontally **on** the vertical segment (same x as the segment)
+- [ ] Vertically placed at the **midpoint** of the first vertical segment
+- [ ] A small white/opaque background behind the text prevents overlap with the edge line
+
+### Label Orientation
+
+- [ ] **Horizontal text** — normal left-to-right reading direction
+- [ ] Text centered over the segment line
+
+### Label Styling
+
+- [ ] Default: simple text with a small opaque background for readability
+- [ ] User can override via `edge.data.labelStyle` (React inline style object)
+- [ ] User can override via `edge.data.labelClassName` (CSS class string)
+- [ ] If both are provided, both are applied (className on element, style as inline)
+
+### Configuration (`lib/defaults.js` additions)
+
+- [ ] `edgeLabelFontSize` (default: 11) — px font size for edge labels
+- [ ] `edgeLabelOffset` (default: 4) — px vertical offset from segment midpoint (fine-tuning)
+- [ ] `edgeLabelBackground` (default: '#ffffff') — background color behind label text
+
+### Rendering
+
+- [ ] Labels rendered as `<text>` (or `<foreignObject>`) elements inside the edge SVG group
+- [ ] Positioned using the pre-computed edge path points (from `EdgeRoutingProvider` or fallback)
+- [ ] The label position is computed from the first two points of the path (source port → stub end)
+- [ ] `text-anchor: middle` for horizontal centering
+- [ ] Small `<rect>` behind text for background (with 2-3px padding)
+
+### Implementation Steps
+
+1. [ ] Add `edgeLabelFontSize`, `edgeLabelOffset`, `edgeLabelBackground` to `DEFAULTS` in `lib/defaults.js`
+2. [ ] Modify `lib/OrthogonalEdge.jsx`:
+   - [ ] Read `data.label`, `data.labelStyle`, `data.labelClassName` from edge props
+   - [ ] Compute label position from the first vertical segment of the path
+   - [ ] Render `<text>` element with background `<rect>` when label is present
+   - [ ] Apply user's `labelStyle` / `labelClassName` if provided
+3. [ ] Modify `EdgeRoutingProvider.jsx`:
+   - [ ] Pass `points` array to the edge context (already done — `{ path, points }`)
+   - [ ] OrthogonalEdge needs access to points to compute label position
+4. [ ] Update `example/src/App.jsx`:
+   - [ ] Add `data.label` to branch output edges (e.g., "If", "Else If", "Else")
+   - [ ] Demo custom styling on one label
+5. [ ] Update `lib/index.js` if any new exports needed
+
+### Verification
+
+- [ ] Branch edges show "If", "Else If", "Else" labels on the vertical segment below the branch node
+- [ ] Labels are horizontally centered on the edge line
+- [ ] Labels have a readable background that doesn't bleed into the edge
+- [ ] Labels respect `edgeLabelFontSize` from config
+- [ ] Custom `data.labelStyle` overrides default styling
+- [ ] Custom `data.labelClassName` adds CSS class to label element
+- [ ] Edges without `data.label` render normally (no empty label element)
+- [ ] Labels re-position correctly when nodes are dragged
+- [ ] Labels work with both EdgeRoutingProvider (context) and fallback (standalone) modes
+
+---
+
+## 14. Future Requirements
 
 <!-- Add new requirements below. Use [ ] for planned items. -->
 <!-- Example:
-- [ ] Edge labels at midpoint
 - [ ] Animated edge drawing
 - [ ] Export/import graph as JSON
 - [ ] Dark mode support
