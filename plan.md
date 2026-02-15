@@ -465,7 +465,63 @@
 
 ---
 
-## 14. Future Requirements
+## 14. Edge Selection & Delete Button (`lib/OrthogonalEdge.jsx`)
+
+### Overview
+
+- [ ] Visual edge selection (highlight color + thicker stroke)
+- [ ] Delete button on edge hover and selection, at edge midpoint
+- [ ] Delete action via user callback `data.onDeleteEdge(edgeId)`
+- [ ] Configurable delete button (default `×` icon, user can provide custom component)
+
+### Selection Visual
+
+- [ ] When edge is selected: stroke color changes to `#1976d2` (blue), stroke becomes thicker
+- [ ] Selected stroke width = `edgeStrokeWidth * 2` (or a configurable multiplier)
+- [ ] Matches node selection highlight color for consistency
+
+### Delete Button
+
+- [ ] Appears at the geometric **midpoint** of the full edge path
+- [ ] Visible on **hover** and when edge is **selected**
+- [ ] Default appearance: small circle with `×` icon (similar to React Flow defaults)
+- [ ] User can pass `data.deleteButton` (React component/element) to render a custom button
+- [ ] Clicking the button calls `data.onDeleteEdge(edgeId)` if provided
+- [ ] Button rendered via React Flow's `EdgeLabelRenderer` (HTML overlay, not SVG)
+
+### Configuration
+
+- [ ] `edgeSelectedColor` (default: '#1976d2') in DEFAULTS
+- [ ] `edgeSelectedWidth` (default: 2.5) in DEFAULTS
+
+### Implementation Steps
+
+1. [ ] Add `edgeSelectedColor`, `edgeSelectedWidth` to DEFAULTS
+2. [ ] Modify `OrthogonalEdge.jsx`:
+   - [ ] Accept `selected` prop from React Flow
+   - [ ] Track hover state with `onMouseEnter`/`onMouseLeave` on interaction path
+   - [ ] Compute midpoint of the edge path for delete button position
+   - [ ] Apply selection styles (color + thickness) when selected
+   - [ ] Render delete button (via `EdgeLabelRenderer`) when hovered or selected
+   - [ ] Default delete button: circular `×` icon
+   - [ ] Support `data.deleteButton` for custom button component
+   - [ ] Call `data.onDeleteEdge(id)` on button click
+3. [ ] Update example App to pass `onDeleteEdge` callback
+
+### Verification
+
+- [ ] Clicking an edge selects it with blue highlight and thicker stroke
+- [ ] Hovering over an edge shows the delete button at the midpoint
+- [ ] Selecting an edge also shows the delete button
+- [ ] Clicking the delete button calls the `onDeleteEdge` callback
+- [ ] Custom `data.deleteButton` component renders instead of default `×`
+- [ ] Delete button disappears when edge is deselected and not hovered
+- [ ] Edge labels still render correctly alongside the delete button
+- [ ] Selection highlight works with both EdgeRoutingProvider and fallback modes
+
+---
+
+## 15. Future Requirements
 
 <!-- Add new requirements below. Use [ ] for planned items. -->
 <!-- Example:

@@ -339,7 +339,15 @@ function Flow() {
         [allNodes, allEdges, addNodes],
     );
 
-    // Inject callbacks into nodes
+    // Delete edge callback
+    const onDeleteEdge = useCallback(
+        (edgeId) => {
+            setAllEdges((eds) => eds.filter((e) => e.id !== edgeId));
+        },
+        [],
+    );
+
+    // Inject callbacks into nodes and edges
     const { visibleNodes, visibleEdges } = useMemo(() => {
         const withCallbacks = allNodes.map((n) => {
             const extra = {};
@@ -349,8 +357,17 @@ function Flow() {
                 ? { ...n, data: { ...n.data, ...extra } }
                 : n;
         });
-        return getVisibleGraph(withCallbacks, allEdges);
-    }, [allNodes, allEdges, onToggleCollapse, onAddNode]);
+        const { visibleNodes: vn, visibleEdges: ve } = getVisibleGraph(
+            withCallbacks,
+            allEdges,
+        );
+        // Inject onDeleteEdge into all visible edges
+        const edgesWithDelete = ve.map((e) => ({
+            ...e,
+            data: { ...(e.data || {}), onDeleteEdge },
+        }));
+        return { visibleNodes: vn, visibleEdges: edgesWithDelete };
+    }, [allNodes, allEdges, onToggleCollapse, onAddNode, onDeleteEdge]);
 
     // Initial layout
     useEffect(() => {
