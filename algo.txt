@@ -1,0 +1,211 @@
+Edge Path Creation for Merge Nodes - Algorithm Explanation
+===========================================================
+
+The Big Picture
+---------------
+A merge node is a small circle where multiple branches converge back into one.
+Unlike regular rectangular nodes (which have fixed handle positions at top/bottom),
+a merge node needs edges to enter from different sides depending on where each
+source is coming from. The system has 3 phases:
+
+1. Determine WHERE to connect on the merge circle
+2. Find the best orthogonal path (only horizontal/vertical segments) using Dijkstra's algorithm
+3. Separate overlapping edges so they don't visually stack on top of each other
+
+
+Phase 1: Dynamic Entry Point (getMergeTargetInfo)
+--------------------------------------------------
+File: EdgeRoutingProvider.jsx:80-107
+
+For regular nodes, the target handle position is fixed (e.g., always the top center).
+But a merge node is a circle, so the edge should enter from the side that makes the
+most visual sense.
+
+The algorithm:
+
+1. Compute the horizontal center of the source node (srcCenterX)
+2. Compute the horizontal center of the merge node (tgtCenterX)
+3. Calculate dx = srcCenterX - tgtCenterX (how far left or right the source is)
+4. Use a threshold = half the merge node's width (the radius):
+   - dx < -threshold -> source is to the LEFT  -> edge enters from the LEFT side of the circle (at the midpoint vertically)
+   - dx > threshold  -> source is to the RIGHT -> edge enters from the RIGHT side
+   - |dx| <= threshold -> source is roughly CENTERED ABOVE -> edge enters from the TOP
+
+This gives you 3 things: the exact (x, y) pixel coordinate to aim for, and a dir
+string ("left", "right", or "top") telling the router which direction the edge
+should approach from.
+
+     Source A          Source B          Source C
+     (left)           (centered)         (right)
+        \                 |                 /
+         -> enters left   | enters top    <- enters right
+            o------------ o ------------ o
+                       (merge)
+
+
+Phase 2: Orthogonal Path Finding (computeOrthogonalPath)
+---------------------------------------------------------
+File: orthogonalRouter.js:255-439
+
+This is the core algorithm. It finds a path that uses only horizontal and vertical
+segments, avoids obstacles (other nodes), and minimizes bends.
+
+
+Step 2a: Create Stubs (lines 264-269)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A "stub" is a short straight segment that extends out from the handle in its natural
+direction. For example, a source handle at the bottom gets a 20px stub going downward.
+A merge node target with dir: "left" gets a 20px stub going leftward.
+
+    Source port --> stub end (20px down)
+                        ... routing happens between stubs ...
+    Merge target <-- stub end (20px left from merge)
+
+This ensures edges don't immediately turn right at the node boundary -- they extend
+out cleanly first.
+
+
+Step 2b: Build the Waypoint Grid (lines 288-326)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The router creates an invisible grid of candidate points:
+
+1. Start with the stub endpoints' x and y coordinates
+2. For every obstacle (other node), add its inflated boundaries (node + 15px padding)
+   as coordinates: left, right, top, bottom
+3. Create the Cartesian product of all unique x-values and y-values -- these are the
+   grid intersections
+4. Discard any point that falls strictly inside an inflated obstacle
+
+The result is a set of waypoints that lie on obstacle edges and around them -- like an
+invisible mesh the edge can travel along.
+
+    +---------------+
+    |   obstacle    |   <- real node
+    +---------------+
+  ^ . . . . . . . . .   <- waypoints on inflated boundary
+    . . . . . . . . .
+    .   +---------+ .
+    .   |         | .
+    .   +---------+ .
+    . . . . . . . . .
+    . . . . . . . . .   <- waypoints on inflated boundary
+
+
+Step 2c: Build the Graph (lines 337-380)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The waypoints become nodes in a graph. Edges connect adjacent waypoints that share the
+same x or y coordinate (so the connection is perfectly horizontal or vertical). But a
+connection is only added if the straight-line segment between them does NOT cross
+through any obstacle.
+
+- Group waypoints by shared x -> connect consecutive points vertically
+- Group waypoints by shared y -> connect consecutive points horizontally
+- Each connection is tagged as 'h' (horizontal) or 'v' (vertical)
+
+
+Step 2d: Dijkstra with Bend Penalty (lines 382-413)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Now run Dijkstra's shortest-path algorithm from the source stub endpoint to the target
+stub endpoint. The cost function is:
+
+    cost = distance (in pixels) + bend penalty (if direction changes)
+
+- Moving 100px horizontally costs 100
+- Then turning to move vertically adds bendPenalty (100 by default) ON TOP OF the distance
+- This heavily discourages unnecessary turns, producing cleaner paths with fewer bends
+
+The algorithm uses a MinHeap priority queue (lines 5-53) for efficiency. It tracks:
+- dist[]    -- best known cost to each waypoint
+- prev[]    -- which waypoint we came from (for path reconstruction)
+- prevDir[] -- direction we arrived from ('h' or 'v') to detect bends
+
+
+Step 2e: Reconstruct & Assemble the Path (lines 415-438)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Walk backward from the target through prev[] pointers to get the waypoint sequence
+2. Prepend the source port + source stub
+3. Append the target stub + target port
+4. Simplify: remove redundant collinear points (e.g., three points in a straight
+   horizontal line -> keep only the two endpoints)
+5. Convert to SVG path string with optional rounded corners
+
+
+Step 2f: SVG Path with Rounded Corners (waypointsToSvgPath, lines 131-193)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+At each 90-degree corner:
+1. Calculate how much room there is on each side (inLen, outLen)
+2. Clamp the bend radius to half the shorter segment (so it doesn't overshoot)
+3. Place an arc start point r pixels before the corner
+4. Place an arc end point r pixels after the corner
+5. Draw a quadratic Bezier curve (Q command) using the actual corner as the control point
+
+    Before:  ------+        After:  ------,
+                   |                       |
+                   |                       |
+
+
+Step 2f-alt: Fallback Path (lines 211-251)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If Dijkstra can't find a path (e.g., everything is blocked), it falls back to a simple
+S-shaped path using midpoints between the two stubs.
+
+
+Phase 3: Separate Overlapping Edges (separateOverlappingEdges)
+---------------------------------------------------------------
+File: orthogonalRouter.js:453-645
+
+When multiple edges share the same path segment (common with merge nodes), they'd draw
+on top of each other. This phase spreads them apart.
+
+
+Step 3a: Extract Segments (lines 466-499)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For each edge path, extract every routable segment (skip the stub segments at start/end).
+Classify each as horizontal or vertical, recording its fixed coordinate and range.
+
+
+Step 3b: Group & Cluster (lines 501-561)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Group segments by (orientation, fixedCoord) -- all horizontal segments at y=200 go together
+2. Within each group, sort by range start and sweep to find overlapping clusters
+   (segments whose ranges overlap)
+3. For each cluster with segments from multiple edges, assign a center-spread offset:
+   - 2 edges -> offsets of -2.5px and +2.5px
+   - 3 edges -> -5px, 0px, +5px
+   - Formula: offset = (i - (N-1)/2) * separation
+
+
+Step 3c: Apply Offsets (lines 571-643)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Shift each affected segment perpendicularly:
+- Horizontal segments get shifted in Y
+- Vertical segments get shifted in X
+
+Then fix any diagonal breaks caused by the shift (since adjacent segments now don't
+connect cleanly):
+- At stub junctions: adjust the stub endpoint to match
+- At interior points: insert a transition waypoint to maintain orthogonality
+
+
+How It All Connects
+--------------------
+
+EdgeRoutingProvider (runs once for ALL edges)
+  |
+  +-- For each edge targeting a merge node:
+  |     +-- getMergeTargetInfo() -> dynamic (x, y, dir)
+  |     +-- computeOrthogonalPath() -> grid + Dijkstra -> points[]
+  |
+  +-- For each edge targeting a regular node:
+  |     +-- getHandleInfo() -> fixed (x, y, dir)
+  |     +-- computeOrthogonalPath() -> grid + Dijkstra -> points[]
+  |
+  +-- separateOverlappingEdges() -> offset shared segments
+  |
+  +-- Store results in React Context (Map<edgeId, {path, points}>)
+        |
+        +-- Each OrthogonalEdge reads its pre-computed path via useEdgeRouting()
+
+The key insight for merge nodes specifically is that the target entry point is not
+fixed -- it's computed dynamically based on the source's relative position, which is
+what makes the edges fan out naturally into the circle from different sides.
