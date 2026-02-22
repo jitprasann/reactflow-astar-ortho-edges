@@ -1,0 +1,708 @@
+{
+    "edgeMap": [
+        [
+            "e-start-branch",
+            {
+                "path": "M 341.75 72 L 341.75 134",
+                "points": [
+                    {
+                        "x": 341.75,
+                        "y": 72
+                    },
+                    {
+                        "x": 341.75,
+                        "y": 134
+                    }
+                ]
+            }
+        ],
+        [
+            "e-branch-if",
+            {
+                "path": "M 304.25 194 L 304.25 228 Q 304.25 236 296.25 236 L 167.5 236 Q 159.5 236 159.5 244 L 159.5 256",
+                "points": [
+                    {
+                        "x": 304.25,
+                        "y": 194
+                    },
+                    {
+                        "x": 304.25,
+                        "y": 236
+                    },
+                    {
+                        "x": 159.5,
+                        "y": 236
+                    },
+                    {
+                        "x": 159.5,
+                        "y": 256
+                    }
+                ]
+            }
+        ],
+        [
+            "e-branch-elseif",
+            {
+                "path": "M 341.75 194 L 341.75 232.25 Q 341.75 236 338 236 L 338 236 Q 334.25 236 334.25 239.75 L 334.25 256",
+                "points": [
+                    {
+                        "x": 341.75,
+                        "y": 194
+                    },
+                    {
+                        "x": 341.75,
+                        "y": 236
+                    },
+                    {
+                        "x": 334.25,
+                        "y": 236
+                    },
+                    {
+                        "x": 334.25,
+                        "y": 256
+                    }
+                ]
+            }
+        ],
+        [
+            "e-branch-else",
+            {
+                "path": "M 379.25 194 L 379.25 228 Q 379.25 236 387.25 236 L 486.25 236 Q 494.25 236 494.25 244 L 494.25 256",
+                "points": [
+                    {
+                        "x": 379.25,
+                        "y": 194
+                    },
+                    {
+                        "x": 379.25,
+                        "y": 236
+                    },
+                    {
+                        "x": 494.25,
+                        "y": 236
+                    },
+                    {
+                        "x": 494.25,
+                        "y": 256
+                    }
+                ]
+            }
+        ],
+        [
+            "e-if-merge",
+            {
+                "path": "M 159.5 642 L 159.5 716 Q 159.5 724 167.5 724 L 394.25 724",
+                "points": [
+                    {
+                        "x": 159.5,
+                        "y": 642
+                    },
+                    {
+                        "x": 159.5,
+                        "y": 724
+                    },
+                    {
+                        "x": 394.25,
+                        "y": 724
+                    }
+                ]
+            }
+        ],
+        [
+            "e-elseif-merge",
+            {
+                "path": "M 334.25 306 L 334.25 716 Q 334.25 724 342.25 724 L 394.25 724",
+                "points": [
+                    {
+                        "x": 334.25,
+                        "y": 306
+                    },
+                    {
+                        "x": 334.25,
+                        "y": 724
+                    },
+                    {
+                        "x": 394.25,
+                        "y": 724
+                    }
+                ]
+            }
+        ],
+        [
+            "e-else-merge",
+            {
+                "path": "M 494.25 306 L 494.25 716 Q 494.25 724 486.25 724 L 434.25 724",
+                "points": [
+                    {
+                        "x": 494.25,
+                        "y": 306
+                    },
+                    {
+                        "x": 494.25,
+                        "y": 724
+                    },
+                    {
+                        "x": 434.25,
+                        "y": 724
+                    }
+                ]
+            }
+        ],
+        [
+            "e-merge-end",
+            {
+                "path": "M 414.25 744 L 414.25 806",
+                "points": [
+                    {
+                        "x": 414.25,
+                        "y": 744
+                    },
+                    {
+                        "x": 414.25,
+                        "y": 806
+                    }
+                ]
+            }
+        ],
+        [
+            "e-5",
+            {
+                "path": "M 159.5 306 L 159.5 368",
+                "points": [
+                    {
+                        "x": 159.5,
+                        "y": 306
+                    },
+                    {
+                        "x": 159.5,
+                        "y": 368
+                    }
+                ]
+            }
+        ],
+        [
+            "e-6",
+            {
+                "path": "M 134.5 428 L 134.5 462 Q 134.5 470 126.5 470 L 80 470 Q 72 470 72 478 L 72 490",
+                "points": [
+                    {
+                        "x": 134.5,
+                        "y": 428
+                    },
+                    {
+                        "x": 134.5,
+                        "y": 470
+                    },
+                    {
+                        "x": 72,
+                        "y": 470
+                    },
+                    {
+                        "x": 72,
+                        "y": 490
+                    }
+                ]
+            }
+        ],
+        [
+            "e-7",
+            {
+                "path": "M 184.5 428 L 184.5 462 Q 184.5 470 192.5 470 L 224 470 Q 232 470 232 478 L 232 490",
+                "points": [
+                    {
+                        "x": 184.5,
+                        "y": 428
+                    },
+                    {
+                        "x": 184.5,
+                        "y": 470
+                    },
+                    {
+                        "x": 232,
+                        "y": 470
+                    },
+                    {
+                        "x": 232,
+                        "y": 490
+                    }
+                ]
+            }
+        ],
+        [
+            "e-8",
+            {
+                "path": "M 72 540 L 72 614 Q 72 622 80 622 L 139.5 622",
+                "points": [
+                    {
+                        "x": 72,
+                        "y": 540
+                    },
+                    {
+                        "x": 72,
+                        "y": 622
+                    },
+                    {
+                        "x": 139.5,
+                        "y": 622
+                    }
+                ]
+            }
+        ],
+        [
+            "e-9",
+            {
+                "path": "M 232 540 L 232 614 Q 232 622 224 622 L 179.5 622",
+                "points": [
+                    {
+                        "x": 232,
+                        "y": 540
+                    },
+                    {
+                        "x": 232,
+                        "y": 622
+                    },
+                    {
+                        "x": 179.5,
+                        "y": 622
+                    }
+                ]
+            }
+        ]
+    ],
+    "nodes:": [
+        [
+            "start",
+            {
+                "id": "start",
+                "type": "square",
+                "position": {
+                    "x": 266.75,
+                    "y": 12
+                },
+                "data": {
+                    "label": "Start",
+                    "inputs": 0,
+                    "outputs": 1,
+                    "width": 150,
+                    "height": 60
+                },
+                "width": 150,
+                "height": 60,
+                "positionAbsolute": {
+                    "x": 266.75,
+                    "y": 12
+                }
+            }
+        ],
+        [
+            "branch1",
+            {
+                "id": "branch1",
+                "type": "branch",
+                "position": {
+                    "x": 266.75,
+                    "y": 134
+                },
+                "data": {
+                    "label": "Branch",
+                    "inputs": 1,
+                    "outputs": 3,
+                    "width": 150,
+                    "height": 60
+                },
+                "width": 150,
+                "height": 60,
+                "positionAbsolute": {
+                    "x": 266.75,
+                    "y": 134
+                }
+            }
+        ],
+        [
+            "if-node",
+            {
+                "id": "if-node",
+                "type": "square",
+                "position": {
+                    "x": 99.5,
+                    "y": 256
+                },
+                "data": {
+                    "label": "If Path",
+                    "inputs": 1,
+                    "outputs": 1,
+                    "width": 120,
+                    "height": 50
+                },
+                "width": 120,
+                "height": 50,
+                "selected": true,
+                "dragging": false,
+                "positionAbsolute": {
+                    "x": 99.5,
+                    "y": 256
+                }
+            }
+        ],
+        [
+            "elseif-node",
+            {
+                "id": "elseif-node",
+                "type": "square",
+                "position": {
+                    "x": 274.25,
+                    "y": 256
+                },
+                "data": {
+                    "label": "Else-If Path",
+                    "inputs": 1,
+                    "outputs": 1,
+                    "width": 120,
+                    "height": 50
+                },
+                "width": 120,
+                "height": 50,
+                "positionAbsolute": {
+                    "x": 274.25,
+                    "y": 256
+                }
+            }
+        ],
+        [
+            "else-node",
+            {
+                "id": "else-node",
+                "type": "square",
+                "position": {
+                    "x": 434.25,
+                    "y": 256
+                },
+                "data": {
+                    "label": "Else Path",
+                    "inputs": 1,
+                    "outputs": 1,
+                    "width": 120,
+                    "height": 50
+                },
+                "width": 120,
+                "height": 50,
+                "positionAbsolute": {
+                    "x": 434.25,
+                    "y": 256
+                }
+            }
+        ],
+        [
+            "merge1",
+            {
+                "id": "merge1",
+                "type": "merge",
+                "position": {
+                    "x": 394.25,
+                    "y": 704
+                },
+                "data": {
+                    "label": "",
+                    "inputs": 3,
+                    "isMerge": true,
+                    "width": 40,
+                    "height": 40
+                },
+                "width": 40,
+                "height": 40,
+                "positionAbsolute": {
+                    "x": 394.25,
+                    "y": 704
+                }
+            }
+        ],
+        [
+            "end",
+            {
+                "id": "end",
+                "type": "square",
+                "position": {
+                    "x": 339.25,
+                    "y": 806
+                },
+                "data": {
+                    "label": "End",
+                    "inputs": 1,
+                    "outputs": 0,
+                    "width": 150,
+                    "height": 60
+                },
+                "width": 150,
+                "height": 60,
+                "positionAbsolute": {
+                    "x": 339.25,
+                    "y": 806
+                }
+            }
+        ],
+        [
+            "branch-1",
+            {
+                "id": "branch-1",
+                "type": "branch",
+                "position": {
+                    "x": 84.5,
+                    "y": 368
+                },
+                "data": {
+                    "label": "Branch",
+                    "inputs": 1,
+                    "outputs": 2,
+                    "width": 150,
+                    "height": 60
+                },
+                "width": 150,
+                "height": 60,
+                "positionAbsolute": {
+                    "x": 84.5,
+                    "y": 368
+                }
+            }
+        ],
+        [
+            "if-2",
+            {
+                "id": "if-2",
+                "type": "square",
+                "position": {
+                    "x": 12,
+                    "y": 490
+                },
+                "data": {
+                    "label": "If",
+                    "inputs": 1,
+                    "outputs": 1,
+                    "width": 120,
+                    "height": 50
+                },
+                "width": 120,
+                "height": 50,
+                "positionAbsolute": {
+                    "x": 12,
+                    "y": 490
+                }
+            }
+        ],
+        [
+            "else-3",
+            {
+                "id": "else-3",
+                "type": "square",
+                "position": {
+                    "x": 172,
+                    "y": 490
+                },
+                "data": {
+                    "label": "Else",
+                    "inputs": 1,
+                    "outputs": 1,
+                    "width": 120,
+                    "height": 50
+                },
+                "width": 120,
+                "height": 50,
+                "positionAbsolute": {
+                    "x": 172,
+                    "y": 490
+                }
+            }
+        ],
+        [
+            "merge-4",
+            {
+                "id": "merge-4",
+                "type": "merge",
+                "position": {
+                    "x": 139.5,
+                    "y": 602
+                },
+                "data": {
+                    "label": "",
+                    "inputs": 2,
+                    "isMerge": true,
+                    "width": 40,
+                    "height": 40
+                },
+                "width": 40,
+                "height": 40,
+                "positionAbsolute": {
+                    "x": 139.5,
+                    "y": 602
+                }
+            }
+        ]
+    ],
+    "edges": [
+        {
+            "id": "e-start-branch",
+            "source": "start",
+            "sourceHandle": "output-0",
+            "target": "branch1",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        },
+        {
+            "id": "e-branch-if",
+            "source": "branch1",
+            "sourceHandle": "output-0",
+            "target": "if-node",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {
+                "label": "If"
+            }
+        },
+        {
+            "id": "e-branch-elseif",
+            "source": "branch1",
+            "sourceHandle": "output-1",
+            "target": "elseif-node",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {
+                "label": "Else If"
+            }
+        },
+        {
+            "id": "e-branch-else",
+            "source": "branch1",
+            "sourceHandle": "output-2",
+            "target": "else-node",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {
+                "label": "Else"
+            }
+        },
+        {
+            "id": "e-if-merge",
+            "source": "merge-4",
+            "sourceHandle": "output-0",
+            "target": "merge1",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        },
+        {
+            "id": "e-elseif-merge",
+            "source": "elseif-node",
+            "sourceHandle": "output-0",
+            "target": "merge1",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        },
+        {
+            "id": "e-else-merge",
+            "source": "else-node",
+            "sourceHandle": "output-0",
+            "target": "merge1",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        },
+        {
+            "id": "e-merge-end",
+            "source": "merge1",
+            "sourceHandle": "output-0",
+            "target": "end",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        },
+        {
+            "id": "e-5",
+            "source": "if-node",
+            "sourceHandle": "output-0",
+            "target": "branch-1",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        },
+        {
+            "id": "e-6",
+            "source": "branch-1",
+            "sourceHandle": "output-0",
+            "target": "if-2",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {
+                "label": "If"
+            }
+        },
+        {
+            "id": "e-7",
+            "source": "branch-1",
+            "sourceHandle": "output-1",
+            "target": "else-3",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {
+                "label": "Else"
+            }
+        },
+        {
+            "id": "e-8",
+            "source": "if-2",
+            "sourceHandle": "output-0",
+            "target": "merge-4",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        },
+        {
+            "id": "e-9",
+            "source": "else-3",
+            "sourceHandle": "output-0",
+            "target": "merge-4",
+            "targetHandle": "input-0",
+            "type": "orthogonal",
+            "markerEnd": {
+                "type": "arrowclosed"
+            },
+            "data": {}
+        }
+    ]
+}

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^2.0.4",
     "elkjs": "^0.11.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

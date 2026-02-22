@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import ReactFlow, {
     ReactFlowProvider,
     Controls,
@@ -16,8 +16,9 @@ import {
     MergeNode,
     BranchNode,
     EdgeRoutingProvider,
-    useAutoLayout,
     getVisibleGraph,
+    layoutGraphDagre,
+    DEFAULTS,
 } from "../../lib/index.js";
 
 const nodeTypes = {
@@ -39,7 +40,6 @@ const makeEdge = (id, source, sourceHandle, target, targetHandle, data) => ({
 });
 
 // Branching flow: Start -> Branch -> (If, ElseIf, Else) -> Merge -> End
-// Merge handles: left branch -> input-left, center -> input-top, right -> input-right
 const rawNodes = [
     {
         id: "start",
@@ -112,16 +112,8 @@ const rawNodes = [
 const rawEdges = [
     makeEdge("e-start-branch", "start", "output-0", "branch1", "input-0"),
     makeEdge("e-branch-if", "branch1", "output-0", "if-node", "input-0", { label: "If" }),
-    makeEdge(
-        "e-branch-elseif",
-        "branch1",
-        "output-1",
-        "elseif-node",
-        "input-0",
-        { label: "Else If" },
-    ),
+    makeEdge("e-branch-elseif", "branch1", "output-1", "elseif-node", "input-0", { label: "Else If" }),
     makeEdge("e-branch-else", "branch1", "output-2", "else-node", "input-0", { label: "Else" }),
-    // All branches connect to merge's single handle — router picks entry side dynamically
     makeEdge("e-if-merge", "if-node", "output-0", "merge1", "input-0"),
     makeEdge("e-elseif-merge", "elseif-node", "output-0", "merge1", "input-0"),
     makeEdge("e-else-merge", "else-node", "output-0", "merge1", "input-0"),
@@ -134,30 +126,20 @@ function nextId(prefix) {
 }
 
 function Flow() {
-    const [allNodes, setAllNodes] = useState(rawNodes);
+    const [allNodes, setAllNodes] = useState(() => layoutGraphDagre(rawNodes, rawEdges));
     const [allEdges, setAllEdges] = useState(rawEdges);
-    const [layoutReady, setLayoutReady] = useState(false);
 
-    const { layoutAll, addNodes } = useAutoLayout();
-
-    // Toggle collapse — re-layout visible graph so gaps close/open
     const onToggleCollapse = useCallback(
-        async (nodeId, collapsed) => {
+        (nodeId, collapsed) => {
             const updatedNodes = allNodes.map((n) =>
                 n.id === nodeId
                     ? { ...n, data: { ...n.data, collapsed } }
                     : n,
             );
-
-            // Compute visible subset and re-layout to close/open gaps
             const { visibleNodes: vNodes, visibleEdges: vEdges } =
                 getVisibleGraph(updatedNodes, allEdges);
-            const positioned = await layoutAll(vNodes, vEdges);
-
-            // Merge new positions back into the full node list
-            const posMap = new Map(
-                positioned.map((n) => [n.id, n.position]),
-            );
+            const positioned = layoutGraphDagre(vNodes, vEdges);
+            const posMap = new Map(positioned.map((n) => [n.id, n.position]));
             setAllNodes(
                 updatedNodes.map((n) => {
                     const pos = posMap.get(n.id);
@@ -165,12 +147,81 @@ function Flow() {
                 }),
             );
         },
-        [allNodes, allEdges, layoutAll],
+        [allNodes, allEdges],
     );
 
-    // Add node/branch below a parent
     const onAddNode = useCallback(
-        async (parentId, type) => {
+        (parentId, type) => {
+            const parentNode = allNodes.find((n) => n.id === parentId);
+
+            // Layout only the new nodes relative to the parent, then shift
+            // all downstream nodes down to make room for the new structure.
+            function placeNewNodes(updatedNodes, newNodes, newEdges, updatedEdges) {
+                if (!parentNode) return [...updatedNodes, ...newNodes];
+
+                // Step 1: position new nodes via mini-graph
+                const mini = layoutGraphDagre([parentNode, ...newNodes], newEdges);
+                const miniParent = mini.find((n) => n.id === parentId);
+                if (!miniParent) return [...updatedNodes, ...newNodes];
+
+                const dx = parentNode.position.x - miniParent.position.x;
+                const dy = parentNode.position.y - miniParent.position.y;
+                const newIds = new Set(newNodes.map((n) => n.id));
+                const positioned = mini
+                    .filter((n) => newIds.has(n.id))
+                    .map((n) => ({
+                        ...n,
+                        position: { x: n.position.x + dx, y: n.position.y + dy },
+                    }));
+
+                // Step 2: find bottom of new nodes
+                const newBottom = Math.max(
+                    ...positioned.map((n) => n.position.y + (n.data?.height ?? DEFAULTS.nodeHeight))
+                );
+
+                // Step 3: find direct downstream nodes (new structure → existing graph)
+                const allEdges = [...updatedEdges, ...newEdges];
+                const directDownstream = new Set(
+                    allEdges
+                        .filter((e) => newIds.has(e.source) && !newIds.has(e.target))
+                        .map((e) => e.target)
+                );
+
+                if (directDownstream.size === 0) return [...updatedNodes, ...positioned];
+
+                // Step 4: BFS to collect all downstream nodes
+                const adjMap = new Map();
+                for (const e of updatedEdges) {
+                    if (!adjMap.has(e.source)) adjMap.set(e.source, []);
+                    adjMap.get(e.source).push(e.target);
+                }
+                const downstreamIds = new Set();
+                const queue = [...directDownstream];
+                while (queue.length) {
+                    const id = queue.shift();
+                    if (downstreamIds.has(id)) continue;
+                    downstreamIds.add(id);
+                    for (const c of adjMap.get(id) || []) queue.push(c);
+                }
+
+                // Step 5: shift downstream nodes down to clear the new structure
+                const nodeMap = new Map(updatedNodes.map((n) => [n.id, n]));
+                const downstreamTopY = Math.min(
+                    ...[...directDownstream].map((id) => nodeMap.get(id)?.position.y ?? Infinity)
+                );
+                const shift = (newBottom + DEFAULTS.verticalGap) - downstreamTopY;
+
+                const finalUpdated = shift > 0
+                    ? updatedNodes.map((n) =>
+                        downstreamIds.has(n.id)
+                            ? { ...n, position: { x: n.position.x, y: n.position.y + shift } }
+                            : n
+                      )
+                    : updatedNodes;
+
+                return [...finalUpdated, ...positioned];
+            }
+
             if (type === "node") {
                 const nodeId = nextId("node");
                 const newNode = {
@@ -186,39 +237,19 @@ function Flow() {
                     },
                 };
 
-                // Find existing child edges from parent and re-attach them from the new node
-                const childEdges = allEdges.filter(
-                    (e) => e.source === parentId,
-                );
                 const updatedEdges = allEdges.map((e) =>
                     e.source === parentId
                         ? { ...e, source: nodeId, sourceHandle: "output-0" }
                         : e,
                 );
-
-                const newEdge = makeEdge(
-                    nextId("e"),
-                    parentId,
-                    "output-0",
-                    nodeId,
-                    "input-0",
-                );
-
-                // Ensure parent has at least 1 output
+                const newEdge = makeEdge(nextId("e"), parentId, "output-0", nodeId, "input-0");
                 const updatedNodes = allNodes.map((n) =>
                     n.id === parentId && (n.data.outputs || 0) === 0
                         ? { ...n, data: { ...n.data, outputs: 1 } }
                         : n,
                 );
 
-                const positioned = await addNodes(
-                    updatedNodes,
-                    [...updatedEdges, newEdge],
-                    parentId,
-                    [newNode],
-                    [newEdge],
-                );
-                setAllNodes(positioned);
+                setAllNodes(placeNewNodes(updatedNodes, [newNode], [newEdge], updatedEdges));
                 setAllEdges([...updatedEdges, newEdge]);
             } else if (type === "branch") {
                 const branchId = nextId("branch");
@@ -277,77 +308,36 @@ function Flow() {
                     },
                 ];
 
-                // Re-attach parent's child edges from merge node
                 const updatedEdges = allEdges.map((e) =>
                     e.source === parentId
                         ? { ...e, source: mergeId, sourceHandle: "output-0" }
                         : e,
                 );
-
                 const newEdges = [
-                    makeEdge(
-                        nextId("e"),
-                        parentId,
-                        "output-0",
-                        branchId,
-                        "input-0",
-                    ),
-                    makeEdge(
-                        nextId("e"),
-                        branchId,
-                        "output-0",
-                        ifId,
-                        "input-0",
-                        { label: "If" },
-                    ),
-                    makeEdge(
-                        nextId("e"),
-                        branchId,
-                        "output-1",
-                        elseId,
-                        "input-0",
-                        { label: "Else" },
-                    ),
+                    makeEdge(nextId("e"), parentId, "output-0", branchId, "input-0"),
+                    makeEdge(nextId("e"), branchId, "output-0", ifId, "input-0", { label: "If" }),
+                    makeEdge(nextId("e"), branchId, "output-1", elseId, "input-0", { label: "Else" }),
                     makeEdge(nextId("e"), ifId, "output-0", mergeId, "input-0"),
-                    makeEdge(
-                        nextId("e"),
-                        elseId,
-                        "output-0",
-                        mergeId,
-                        "input-0",
-                    ),
+                    makeEdge(nextId("e"), elseId, "output-0", mergeId, "input-0"),
                 ];
 
-                // Ensure parent has at least 1 output
                 const updatedNodes = allNodes.map((n) =>
                     n.id === parentId && (n.data.outputs || 0) === 0
                         ? { ...n, data: { ...n.data, outputs: 1 } }
                         : n,
                 );
 
-                const positioned = await addNodes(
-                    updatedNodes,
-                    [...updatedEdges, ...newEdges],
-                    parentId,
-                    newNodes,
-                    newEdges,
-                );
-                setAllNodes(positioned);
+                setAllNodes(placeNewNodes(updatedNodes, newNodes, newEdges, updatedEdges));
                 setAllEdges([...updatedEdges, ...newEdges]);
             }
         },
-        [allNodes, allEdges, addNodes],
+        [allNodes, allEdges],
     );
 
-    // Delete edge callback
-    const onDeleteEdge = useCallback(
-        (edgeId) => {
-            setAllEdges((eds) => eds.filter((e) => e.id !== edgeId));
-        },
-        [],
-    );
+    const onDeleteEdge = useCallback((edgeId) => {
+        setAllEdges((eds) => eds.filter((e) => e.id !== edgeId));
+    }, []);
 
-    // Inject callbacks into nodes and edges
     const { visibleNodes, visibleEdges } = useMemo(() => {
         const withCallbacks = allNodes.map((n) => {
             const extra = {};
@@ -357,11 +347,7 @@ function Flow() {
                 ? { ...n, data: { ...n.data, ...extra } }
                 : n;
         });
-        const { visibleNodes: vn, visibleEdges: ve } = getVisibleGraph(
-            withCallbacks,
-            allEdges,
-        );
-        // Inject onDeleteEdge into all visible edges
+        const { visibleNodes: vn, visibleEdges: ve } = getVisibleGraph(withCallbacks, allEdges);
         const edgesWithDelete = ve.map((e) => ({
             ...e,
             data: { ...(e.data || {}), onDeleteEdge },
@@ -369,16 +355,6 @@ function Flow() {
         return { visibleNodes: vn, visibleEdges: edgesWithDelete };
     }, [allNodes, allEdges, onToggleCollapse, onAddNode, onDeleteEdge]);
 
-    // Initial layout
-    useEffect(() => {
-        if (layoutReady) return;
-        layoutAll(rawNodes, rawEdges).then((positioned) => {
-            setAllNodes(positioned);
-            setLayoutReady(true);
-        });
-    }, [layoutReady, layoutAll]);
-
-    // Handle React Flow changes (drag, select)
     const onNodesChange = useCallback((changes) => {
         setAllNodes((nds) => applyNodeChanges(changes, nds));
     }, []);
@@ -387,25 +363,19 @@ function Flow() {
         setAllEdges((eds) => applyEdgeChanges(changes, eds));
     }, []);
 
-    // Manual edge connection
     const onConnect = useCallback((params) => {
         setAllEdges((eds) =>
             addEdge(
-                {
-                    ...params,
-                    type: "orthogonal",
-                    markerEnd: { type: MarkerType.ArrowClosed },
-                },
+                { ...params, type: "orthogonal", markerEnd: { type: MarkerType.ArrowClosed } },
                 eds,
             ),
         );
     }, []);
 
-    // Re-layout
-    const handleLayout = useCallback(async () => {
-        const positioned = await layoutAll(allNodes, allEdges);
+    const handleLayout = useCallback(() => {
+        const positioned = layoutGraphDagre(allNodes, allEdges);
         setAllNodes(positioned);
-    }, [allNodes, allEdges, layoutAll]);
+    }, [allNodes, allEdges]);
 
     return (
         <div style={{ width: "100vw", height: "100vh" }}>

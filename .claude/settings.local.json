@@ -6,7 +6,14 @@
       "WebSearch",
       "WebFetch(domain:eclipse.dev)",
       "Bash(npm install:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(dir:*)",
+      "Bash(node -e:*)",
+      "Bash(powershell -Command \"Test-Path ''D:\\\\Projects\\\\orthogonal\\\\example\\\\node_modules\\\\@dagrejs\\\\dagre''\")",
+      "Bash(powershell -Command \"Get-ChildItem ''D:\\\\Projects\\\\orthogonal\\\\example\\\\node_modules\\\\@dagrejs\\\\dagre'' | Select-Object -First 5 -ExpandProperty Name\")",
+      "Bash(powershell -Command \"Get-Content ''D:\\\\Projects\\\\orthogonal\\\\example\\\\node_modules\\\\@dagrejs\\\\dagre\\\\package.json'' | Select-String ''\"\"main\"\"|\"\"module\"\"|\"\"exports\"\"|\"\"version\"\"''\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }
