@@ -53,6 +53,7 @@ export default function OrthogonalEdge({
     earlyBendBias: data?.label ? (data?.routingConfig?.earlyBendBias ?? DEFAULTS.earlyBendBias) : 0,
   };
   const [hovered, setHovered] = useState(false);
+  const [showInlineMenu, setShowInlineMenu] = useState(false);
 
   const onMouseEnter = useCallback(() => setHovered(true), []);
   const onMouseLeave = useCallback(() => setHovered(false), []);
@@ -115,9 +116,9 @@ export default function OrthogonalEdge({
         : label)
     : undefined;
 
-  // --- Delete button ---
-  const showDelete = (hovered || selected) && data?.onDeleteEdge;
-  const mid = showDelete ? pathMidpoint(edgePoints) : null;
+  // --- Midpoint toolbar (delete + inline add) ---
+  const mid = (hovered || selected) ? pathMidpoint(edgePoints) : null;
+  const showToolbar = !!(mid && (data?.onDeleteEdge || data?.onAddNodeInline));
 
   const handleDelete = useCallback(
     (e) => {
@@ -126,6 +127,45 @@ export default function OrthogonalEdge({
     },
     [data?.onDeleteEdge, id]
   );
+
+  const handleInlineAdd = useCallback(
+    (type) => (e) => {
+      e.stopPropagation();
+      setShowInlineMenu(false);
+      if (data?.onAddNodeInline) data.onAddNodeInline(id, type);
+    },
+    [data?.onAddNodeInline, id]
+  );
+
+  const toggleInlineMenu = useCallback((e) => {
+    e.stopPropagation();
+    setShowInlineMenu((v) => !v);
+  }, []);
+
+  const btnStyle = {
+    width: 20,
+    height: 20,
+    borderRadius: '50%',
+    border: '1px solid #999',
+    background: '#fff',
+    color: '#666',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 12,
+    lineHeight: 1,
+    padding: 0,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+  };
+
+  const menuItemStyle = {
+    padding: '6px 12px',
+    cursor: 'pointer',
+    fontSize: 12,
+    color: '#333',
+    whiteSpace: 'nowrap',
+  };
 
   return (
     <>
@@ -157,39 +197,91 @@ export default function OrthogonalEdge({
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       />
-      {showDelete && mid && (
+      {showToolbar && mid && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${mid.x}px, ${mid.y}px)`,
               pointerEvents: 'all',
+              display: 'flex',
+              gap: 4,
+              alignItems: 'center',
             }}
             className="nodrag nopan"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
           >
-            {data?.deleteButton || (
-              <button
-                onClick={handleDelete}
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  border: '1px solid #999',
-                  background: '#fff',
-                  color: '#666',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 12,
-                  lineHeight: 1,
-                  padding: 0,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                }}
-                title="Delete edge"
-              >
-                ×
-              </button>
+            {/* Inline add button */}
+            {data?.onAddNodeInline && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={toggleInlineMenu}
+                  style={{ ...btnStyle, fontSize: 14 }}
+                  title="Add node here"
+                >
+                  +
+                </button>
+                {showInlineMenu && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 24,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: '#fff',
+                      border: '1px solid #ccc',
+                      borderRadius: 4,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      zIndex: 20,
+                    }}
+                    onMouseEnter={onMouseEnter}
+                    onMouseLeave={onMouseLeave}
+                  >
+                    <div
+                      style={{
+                        padding: '4px 12px 2px',
+                        fontSize: 10,
+                        color: '#999',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      Insert between
+                    </div>
+                    <div
+                      onClick={handleInlineAdd('node')}
+                      style={menuItemStyle}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      Add Node
+                    </div>
+                    <div
+                      onClick={handleInlineAdd('branch')}
+                      style={{ ...menuItemStyle, borderTop: '1px solid #eee' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      Add Branch
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Delete button */}
+            {data?.onDeleteEdge && (
+              data?.deleteButton || (
+                <button
+                  onClick={handleDelete}
+                  style={btnStyle}
+                  title="Delete edge"
+                >
+                  ×
+                </button>
+              )
             )}
           </div>
         </EdgeLabelRenderer>

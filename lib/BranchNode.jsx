@@ -1,13 +1,23 @@
-import React, { memo, useCallback } from 'react';
-import { Handle, Position } from 'reactflow';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import AddNodeMenu from './AddNodeMenu.jsx';
 
 const BranchNode = memo(function BranchNode({ id, data, selected }) {
   const width = data.width || 150;
   const height = data.height || 60;
   const label = data.label || '';
-  const inputs = data.inputs || 1;
-  const outputs = data.outputs || 2;
+  const inputs = data.inputs || 0;
+  const outputs = data.outputs || 0;
+
+  const updateNodeInternals = useUpdateNodeInternals();
+  const prevHandles = useRef(`${inputs}-${outputs}`);
+  useEffect(() => {
+    const key = `${inputs}-${outputs}`;
+    if (prevHandles.current !== key) {
+      prevHandles.current = key;
+      updateNodeInternals(id);
+    }
+  }, [inputs, outputs, id, updateNodeInternals]);
   const collapsed = !!data.collapsed;
   const onToggleCollapse = data.onToggleCollapse;
 
@@ -39,36 +49,48 @@ const BranchNode = memo(function BranchNode({ id, data, selected }) {
       }}
     >
       {label}
-      {Array.from({ length: inputs }, (_, i) => (
-        <Handle
-          key={`input-${i}`}
-          type="target"
-          position={Position.Top}
-          id={`input-${i}`}
-          style={{
-            left: `${((i + 1) / (inputs + 1)) * 100}%`,
-            transform: 'translateX(-50%)',
-            background: '#555',
-            width: 8,
-            height: 8,
-          }}
-        />
-      ))}
-      {Array.from({ length: outputs }, (_, i) => (
-        <Handle
-          key={`output-${i}`}
-          type="source"
-          position={Position.Bottom}
-          id={`output-${i}`}
-          style={{
-            left: `${((i + 1) / (outputs + 1)) * 100}%`,
-            transform: 'translateX(-50%)',
-            background: '#555',
-            width: 8,
-            height: 8,
-          }}
-        />
-      ))}
+      {Array.from({ length: inputs }, (_, i) => {
+        const offset = (i - (inputs - 1) / 2) * 8;
+        return (
+          <Handle
+            key={`input-${i}`}
+            type="target"
+            position={Position.Top}
+            id={`input-${i}`}
+            style={{
+              left: `calc(50% + ${offset}px)`,
+              transform: 'translateX(-50%)',
+              background: 'transparent',
+              width: 1,
+              height: 1,
+              border: 'none',
+              opacity: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        );
+      })}
+      {Array.from({ length: outputs }, (_, i) => {
+        const offset = (i - (outputs - 1) / 2) * 8;
+        return (
+          <Handle
+            key={`output-${i}`}
+            type="source"
+            position={Position.Bottom}
+            id={`output-${i}`}
+            style={{
+              left: `calc(50% + ${offset}px)`,
+              transform: 'translateX(-50%)',
+              background: 'transparent',
+              width: 1,
+              height: 1,
+              border: 'none',
+              opacity: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        );
+      })}
       <button
         onClick={handleToggle}
         style={{
@@ -91,7 +113,14 @@ const BranchNode = memo(function BranchNode({ id, data, selected }) {
       >
         {collapsed ? '+' : '\u2212'}
       </button>
-      {data.onAddNode && <AddNodeMenu nodeId={id} onAddNode={data.onAddNode} />}
+      {data.onAddNode && (
+        <AddNodeMenu
+          nodeId={id}
+          onAddNode={data.onAddNode}
+          otherNodes={data.otherNodes}
+          onConnectToExisting={data.onConnectToExisting}
+        />
+      )}
     </div>
   );
 });

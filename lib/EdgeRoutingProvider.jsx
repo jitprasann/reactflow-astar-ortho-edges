@@ -55,20 +55,22 @@ function getHandleInfo(node, handleId, handleType, cfg) {
         }
     }
 
-    // Fallback: compute from SquareNode port formula
+    // Fallback: centered handles 8px apart
     const idx = parseInt((handleId || "").split("-")[1], 10) || 0;
 
     if (handleType === "source") {
         const total = node.data?.outputs || 1;
+        const offset = (idx - (total - 1) / 2) * 8;
         return {
-            x: nodeX + ((idx + 1) / (total + 1)) * nodeWidth,
+            x: nodeX + nodeWidth / 2 + offset,
             y: nodeY + nodeHeight,
             dir: "bottom",
         };
     } else {
         const total = node.data?.inputs || 1;
+        const offset = (idx - (total - 1) / 2) * 8;
         return {
-            x: nodeX + ((idx + 1) / (total + 1)) * nodeWidth,
+            x: nodeX + nodeWidth / 2 + offset,
             y: nodeY,
             dir: "top",
         };
