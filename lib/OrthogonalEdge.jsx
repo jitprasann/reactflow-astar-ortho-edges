@@ -47,7 +47,11 @@ export default function OrthogonalEdge({
   style,
   selected,
 }) {
-  const cfg = { ...DEFAULTS, ...(data?.routingConfig || {}) };
+  const cfg = {
+    ...DEFAULTS,
+    ...(data?.routingConfig || {}),
+    earlyBendBias: data?.label ? (data?.routingConfig?.earlyBendBias ?? DEFAULTS.earlyBendBias) : 0,
+  };
   const [hovered, setHovered] = useState(false);
 
   const onMouseEnter = useCallback(() => setHovered(true), []);

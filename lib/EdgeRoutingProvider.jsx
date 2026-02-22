@@ -175,6 +175,10 @@ export default function EdgeRoutingProvider({ children, config }) {
                 ...(edge.data?.routingConfig || {}),
                 sourceDir: srcInfo.dir,
                 targetDir: tgtInfo.dir,
+                // Apply early-bend bias only for edges that carry a label so
+                // the horizontal segment (where the label sits) appears close
+                // to the source. Unlabelled edges keep the late-bend default.
+                earlyBendBias: edge.data?.label ? cfg.earlyBendBias : 0,
             };
             const { points } = computeOrthogonalPath(
                 srcInfo.x,
