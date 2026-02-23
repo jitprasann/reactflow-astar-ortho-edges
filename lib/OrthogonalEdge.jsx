@@ -118,7 +118,8 @@ export default function OrthogonalEdge({
 
   // --- Midpoint toolbar (delete + inline add) ---
   const mid = (hovered || selected) ? pathMidpoint(edgePoints) : null;
-  const showToolbar = !!(mid && (data?.onDeleteEdge || data?.onAddNodeInline));
+  const hasEdgeMenu = !!(data?.renderEdgeMenu || data?.onAddNodeInline);
+  const showToolbar = !!(mid && (data?.onDeleteEdge || hasEdgeMenu));
 
   const handleDelete = useCallback(
     (e) => {

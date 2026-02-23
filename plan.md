@@ -53,8 +53,8 @@
 - [x] `edgeStrokeWidth` (default: 1.5) — default edge thickness
 - [x] `edgeSeparation` (default: 5) — px gap between parallel/overlapping edges for visual distinction
 - [x] `bendRadius` (default: 8) — px radius for rounded corners at 90° edge bends
-- [ ] `horizontalGap` (default: 40) — px horizontal spacing between sibling branch nodes in layout
-- [ ] `verticalGap` (default: 60) — px vertical spacing between parent and child rows in layout
+- [x] `horizontalGap` (default: 40) — px horizontal spacing between sibling branch nodes in layout
+- [x] `verticalGap` (default: 60) — px vertical spacing between parent and child rows in layout
 
 ### Configuration Override Levels
 
@@ -63,33 +63,55 @@
 
 ---
 
-## 3. Custom Node (`lib/SquareNode.jsx`)
+## 3. Custom Nodes
+
+### SquareNode (`lib/SquareNode.jsx`)
 
 - [x] Configurable width/height via `data.width`, `data.height`
 - [x] Multiple input ports on top edge (Position.Top, type: target)
 - [x] Multiple output ports on bottom edge (Position.Bottom, type: source)
-- [x] Port positioning formula: port `i` of `N` → `left: ((i+1) / (N+1)) * 100%`
+- [x] Port positioning formula: `offset = (i - (count-1)/2) * 8` — 8px apart, centered
 - [x] Unique handle IDs: `input-0`, `input-1`, ..., `output-0`, `output-1`, ...
 - [x] Visual selection state (border color change)
 - [x] Configurable label via `data.label`
+- [x] Handles are invisible (opacity 0, transparent, 1px, pointerEvents none)
+- [x] `useUpdateNodeInternals` — forces React Flow to re-measure handles when inputs/outputs count changes
+- [x] AddNodeMenu integration — "+" button for adding nodes/branches from this node
+
+### BranchNode (`lib/BranchNode.jsx`)
+
+- [x] Same handle positioning and invisible handle styling as SquareNode (8px apart, centered)
+- [x] `useUpdateNodeInternals` — same pattern as SquareNode
+- [x] Expand/collapse toggle button (bottom-right corner, +/− icon)
+- [x] `data.onToggleCollapse(nodeId, collapsed)` callback
+- [x] AddNodeMenu integration
+
+### MergeNode (`lib/MergeNode.jsx`)
+
+- [x] Circular node component for merge points
+- [x] `data.isMerge = true` flag for layout engine detection
+- [x] Fixed handles (input-0 full-circle overlay, output-0 visible dot)
+- [x] Dynamic entry side computation based on source position (left/right/top)
 
 ---
 
 ## 4. Edge Routing Provider (`lib/EdgeRoutingProvider.jsx`)
 
 - [x] React context (`EdgeRoutingContext`) that stores a map of `edgeId → { path, points }`
-- [x] `EdgeRoutingProvider` component — must be placed between `<ReactFlowProvider>` and `<ReactFlow>` (NOT as child of ReactFlow, since edge components are rendered in a separate SVG tree)
+- [x] `EdgeRoutingProvider` component — placed as wrapper around ReactFlow
 - [x] Uses `useStore` from reactflow to access `nodeInternals` (node positions + `handleBounds`)
 - [x] Uses `useEdges()` from reactflow to get all edge definitions
-- [x] For each edge, computes source/target handle positions from `handleBounds`:
-  - `absoluteX = node.positionAbsolute.x + handle.x + handle.width / 2`
-  - `absoluteY = node.positionAbsolute.y + handle.y + handle.height / 2`
-- [x] Fallback handle position computation when `handleBounds` not yet measured (uses port formula `((i+1) / (N+1)) * nodeWidth` + node data)
+- [x] For each edge, computes source/target handle positions from `handleBounds`
+- [x] Fallback handle position computation matching the 8px-apart centered formula:
+  - `offset = (idx - (total - 1) / 2) * 8`
+  - Source: `x = nodeX + nodeWidth/2 + offset`, `y = nodeY + nodeHeight`
+  - Target: `x = nodeX + nodeWidth/2 + offset`, `y = nodeY`
+- [x] Merge node: dynamic entry side computation via `getMergeTargetInfo()`
 - [x] Builds obstacle rectangles from all nodes, excluding source/target per edge
 - [x] Calls `computeOrthogonalPath()` for every edge in a single pass
 - [x] Calls `separateOverlappingEdges()` on all computed paths to apply edge separation
-- [x] Results memoized via `useMemo` — recomputes only when node positions or edge connections change
-- [x] Real-time re-routing during node drag (provider recomputes on every position change)
+- [x] Results memoized via `useMemo`
+- [x] Real-time re-routing during node drag
 
 ---
 
@@ -97,28 +119,70 @@
 
 - [x] Renders via `<BaseEdge>` from reactflow with arrowhead marker support
 - [x] Supports per-edge config override via `data.routingConfig`
-- [x] **Changed**: reads pre-computed separated path from `EdgeRoutingContext` instead of computing independently
-- [x] **Fallback**: if no `EdgeRoutingProvider` is present (context is empty), falls back to independent `computeOrthogonalPath()` call (backwards compatibility)
-- [x] Converts nodes to simple `{id, x, y, width, height}` rectangles (used in fallback mode only)
+- [x] Reads pre-computed separated path from `EdgeRoutingContext`
+- [x] Fallback: if no `EdgeRoutingProvider`, falls back to independent computation
+- [x] Edge labels on horizontal segments (via `data.label`)
+- [x] Edge selection highlight (blue, thicker stroke)
+- [x] Delete button on edge hover/selection at midpoint
+- [x] Add node inline button ("+" on edges)
+- [x] `data.onDeleteEdge(edgeId)` callback
+- [x] `data.onAddNodeInline(edgeId, type)` callback
 
 ---
 
-## 6. Public API (`lib/index.js`)
+## 6. Layout Engine
+
+### Dagre Layout (`lib/dagreLayout.js`)
+
+- [x] Uses dagre for layered graph layout (top-to-bottom)
+- [x] `layoutGraphDagre(nodes, edges, config?)` — positions all nodes
+- [x] Respects `horizontalGap` and `verticalGap` from config
+- [x] Used for full re-layout and mini-layout of subgraphs
+
+### ELK Layout (`lib/layoutEngine.js`)
+
+- [x] ELK-based layout engine (elkjs) — alternative layout option
+- [x] `buildElkGraph(nodes, edges, cfg, interactive)` — converts React Flow to ELK format
+- [x] Explicit ports per node with FIXED_POS constraint
+- [x] Port positions use same 8px-apart centered formula as handles
+- [x] `LONGEST_PATH_SOURCE` layering strategy — same-depth siblings on same layer
+- [x] `BRANDES_KOEPF` with `BALANCED` alignment for node placement
+- [x] `ORTHOGONAL` edge routing (ELK routing unused, ours used instead)
+- [x] `NODES_AND_EDGES` model order strategy
+- [x] Interactive mode support with semi-interactive crossing minimization
+- [x] `layoutGraph(nodes, edges, config)` — async full layout
+- [x] `addNodesToLayout(existingNodes, existingEdges, parentId, newNodes, newEdges, config)` — incremental layout
+
+### Collapse/Expand (`lib/layoutEngine.js`)
+
+- [x] `getVisibleGraph(nodes, edges)` — filters collapsed nodes/edges, generates bypass edges
+- [x] Full group collapse: branch node `data.collapsed = true` hides all nodes between branch and merge
+- [x] Per-branch collapse: individual branch child `data.collapsed = true` hides that branch path only
+- [x] `findMergeNode(branchId)` — BFS to find merge node reachable from all branches
+- [x] `collectBetween(startId, mergeId)` — collects nodes between branch and merge
+- [x] `collectBranchPath(branchChildId, mergeId)` — collects single branch path
+- [x] Bypass edges: direct edge from branch node to merge node's child when collapsed
+
+---
+
+## 7. Public API (`lib/index.js`)
 
 - [x] Export `OrthogonalEdge` — custom edge component
 - [x] Export `SquareNode` — custom node component
+- [x] Export `MergeNode` — circular merge node component
+- [x] Export `BranchNode` — branch node with collapse toggle
 - [x] Export `computeOrthogonalPath` — standalone routing function
 - [x] Export `waypointsToSvgPath` — SVG path string generator
 - [x] Export `DEFAULTS` — configuration constants
-- [x] Export `EdgeRoutingProvider` — context provider for centralized edge routing with separation
-- [ ] Export `layoutGraph` — compute positions for all nodes from scratch
-- [ ] Export `addNodesToLayout` — incremental layout: add nodes below a parent, push children down
-- [ ] Export `useAutoLayout` — React hook integrating layout engine with React Flow
-- [ ] Export `MergeNode` — circular merge node component
+- [x] Export `EdgeRoutingProvider` — context provider for centralized edge routing
+- [x] Export `getVisibleGraph` — collapse/expand visibility computation
+- [x] Export `layoutGraphDagre` — dagre-based layout
+- [x] Export `layoutGraph` — ELK-based layout (async)
+- [x] Export `addNodesToLayout` — incremental ELK layout (async)
 
 ---
 
-## 7. Example App (`example/`)
+## 8. Example App (`example/src/App.jsx`)
 
 ### Stack
 
@@ -130,41 +194,68 @@
 
 ### Pre-loaded Graph
 
-- [x] Node N1 at (250, 0) — 0 inputs, 3 outputs
-- [x] Node N2 at (100, 150) — 1 input, 1 output
-- [x] Node N3 at (400, 150) — 1 input, 1 output
-- [x] Node N4 at (250, 300) — 2 inputs, 1 output
-- [x] Node N5 at (250, 450) — 2 inputs, 0 outputs
+- [x] Branching flow: Start → Branch → (If, ElseIf, Else) → Merge → End
+- [x] No explicit inputs/outputs — derived from edges at render time via `injectHandleCounts`
+- [x] Edge labels on branch outputs ("If", "Else If", "Else")
+- [x] Initial positions computed via `layoutGraphDagre`
 
-### Pre-loaded Edges
+### Dynamic Node/Edge Management
 
-- [x] N1 → N2 (output-0 → input-0)
-- [x] N1 → N3 (output-2 → input-0)
-- [x] N3 → N4 (output-0 → input-1)
-- [x] N2 → N4 (output-0 → input-0)
-- [x] N4 → N5 (output-0 → input-0)
-- [x] N1 → N5 (output-1 → input-1)
-- [x] All edges type `'orthogonal'` with `MarkerType.ArrowClosed`
+- [x] **Edge-driven handles**: `inputs`/`outputs` counts derived from edges, not stored explicitly
+- [x] `injectHandleCounts(nodes, edges)` — stamps handle counts into node data from edge analysis
+- [x] **Stale closure prevention**: `nodesRef` and `edgesRef` refs updated on every render, used in all callbacks with `[]` dependency arrays
 
-### Interactive Features
+### Add Node from Node ("+" button on nodes)
 
-- [x] Add Node button — creates new node with 1 input, 1 output at random position
-- [x] Remove Selected button — deletes selected nodes + their connected edges
-- [x] Connect nodes by dragging from output handle to input handle (auto-creates orthogonal edge)
-- [x] Drag nodes to test real-time edge re-routing
-- [x] React Flow `<Controls>` component
-- [x] React Flow `<Background>` component
-- [x] Delete key support for removing selected elements
+- [x] `onAddNode(parentId, type)` — adds a node or branch structure as new output from parent
+- [x] Type "node": creates single SquareNode connected to parent
+- [x] Type "branch": creates Branch + If + Else + Merge structure
+- [x] **Branch-aware addition**: when parent is a branch node:
+  - Edge gets label "Condition N" (N = output index + 1)
+  - BFS finds the branch's merge node
+  - New node auto-connected to merge node
+- [x] **Mini dagre layout**: only parent + existing siblings + new nodes are laid out
+  - Parent position stays fixed (delta applied)
+  - Only siblings and new nodes get repositioned
+  - Rest of graph untouched
 
-### Styling
+### Add Node on Edge ("+" button on edges)
 
-- [x] Controls panel overlay (top-left, z-index above canvas)
-- [x] Node selection highlight (blue border)
-- [x] Edge selection highlight (blue, thicker stroke)
+- [x] `onAddNodeInline(edgeId, type)` — inserts node/branch structure between edge source and target
+- [x] Removes original edge, rewires through new structure
+- [x] Uses `placeNewNodes` for positioning
+- [x] Downstream nodes shifted down to make room
+
+### Connect to Existing Node
+
+- [x] `onConnectToExisting(sourceNodeId, targetNodeId)` — creates edge with next available handles
+- [x] AddNodeMenu on each node shows "Connect to" section with other visible non-merge nodes
+
+### Delete Edge
+
+- [x] `onDeleteEdge(edgeId)` — removes edge and re-indexes remaining handles
+- [x] Source handles re-indexed to close gaps (contiguous output-0, output-1, ...)
+- [x] Target handles re-indexed similarly (contiguous input-0, input-1, ...)
+- [x] Node handle counts updated via `injectHandleCounts`
+
+### Collapse/Expand
+
+- [x] `onToggleCollapse(nodeId, collapsed)` — toggles branch collapse state
+- [x] Runs `getVisibleGraph` to compute visible nodes/edges
+- [x] Re-layouts visible nodes via `layoutGraphDagre`
+- [x] Position map applied back to full node set
+
+### Other Features
+
+- [x] Re-Layout button — full dagre layout of all nodes
+- [x] Manual drag support — positions preserved until re-layout
+- [x] Connect nodes by handle drag
+- [x] Delete key support
+- [x] React Flow Controls and Background components
 
 ---
 
-## 8. Rounded Corners on Edge Bends
+## 9. Rounded Corners on Edge Bends
 
 - [x] `bendRadius` config option (default: 8) — px radius for rounded corners at each 90° bend
 - [x] Modify `waypointsToSvgPath()` to generate quadratic bezier (`Q`) at bend points instead of sharp `L` corners
@@ -178,7 +269,7 @@
 
 ---
 
-## 9. Technical Constraints
+## 10. Technical Constraints
 
 - [x] React Flow v11 — package `reactflow` (not `@xyflow/react`)
 - [x] `node.width` / `node.height` set directly (not under `node.measured`)
@@ -192,336 +283,70 @@
 
 ---
 
-## 10. Verification Checklist
+## 11. Key Implementation Details
 
-- [x] `cd example && npm install && npm run dev` starts on localhost
-- [x] Pre-loaded graph renders with all 6 edges routing orthogonally around nodes
-- [x] Drag any node — all connected and nearby edges re-route in real-time
-- [x] Drag N4 between N2 and N3 — edges to N5 route around N4 with padding
-- [x] Click "Add Node", place between existing nodes — existing edges avoid it
-- [x] Connect two nodes by dragging handle-to-handle — new orthogonal edge appears
-- [x] Select node/edge and click "Remove Selected" — removes correctly
-- [x] Edge N1→N5 routes around N2, N3, N4 with visible padding gaps
-- [x] Edges that share a common segment are visually separated (not drawn on top of each other)
-- [x] Overlapping edges show center-spread offset with configurable gap
-- [x] Edge bends have rounded corners (not sharp 90° angles)
-- [x] Rounded corners degrade gracefully on short segments (radius clamped)
+### Handle Positioning Consistency
 
-### Layout Verification
+The handle position formula **must be identical** in all 4 places:
+1. `SquareNode.jsx` — CSS `left: calc(50% + ${offset}px)`
+2. `BranchNode.jsx` — CSS `left: calc(50% + ${offset}px)`
+3. `EdgeRoutingProvider.jsx` — fallback computation `nodeX + nodeWidth/2 + offset`
+4. `layoutEngine.js` — ELK port positions `nodeWidth/2 + offset`
 
-- [ ] `layoutGraph()` positions a simple sequential chain (A → B → C) in a straight vertical line with `verticalGap` spacing
-- [ ] A branch node with 2 outputs creates an if/else layout: left and right children equidistant from parent X
-- [ ] A branch node with 3 outputs creates if/else-if/else: left, center, right with equal `horizontalGap`
-- [ ] Merge node (circular, `data.isMerge=true`) positioned below the deepest branch
-- [ ] Edges from shorter branches route correctly down to the merge node
-- [ ] Nested branches: inner branch group has its own merge, outer merge sits below everything
-- [ ] `addNodesToLayout()` inserts a node between parent and children, pushing children down
-- [ ] After merge, the next node returns to the parent's X position (straight vertical flow resumes)
-- [ ] Subtree width calculation prevents overlapping branch subtrees
-- [ ] Dragging a node preserves its position; `layoutGraph()` resets all positions
-- [ ] Drop handler positions a new node below the target parent in the layout
+Formula: `offset = (i - (count - 1) / 2) * 8`
+- 1 handle: center (offset = 0)
+- 2 handles: -4px and +4px from center
+- 3 handles: -8px, 0, +8px from center
 
----
+### React Flow Handle Re-measurement
 
-## 11. Auto-Layout Engine (`lib/layoutEngine.js`) — NEW
+- React Flow caches `handleBounds` and only updates via `ResizeObserver` on dimension changes
+- When handles are added/removed dynamically (changing `data.inputs`/`data.outputs`), node dimensions don't change
+- Each node component (SquareNode, BranchNode) calls `useUpdateNodeInternals(id)` when handle counts change
+- This forces React Flow to re-measure handle positions for correct edge connections
 
-### Overview
+### Edge-Driven Handle Architecture
 
-- [ ] Vertical (top-to-bottom) auto-layout engine that manages node positions
-- [ ] Uses **elkjs** (`elk.algorithm: 'layered'`) for position computation — no custom layout math
-- [ ] Library infers graph structure from nodes + edges provided by the user
-- [ ] Supports sequential flows, branching (if/else/else-if), merge nodes, and unlimited nesting
-- [ ] elkjs handles: layer assignment, node ordering, coordinate assignment, subtree spacing
-- [ ] Our code handles: ELK graph construction, collapse visibility, React Flow integration
-- [ ] elkjs edge routing is **ignored** — we use our own orthogonal router from Phase 1
-
-### Dependency
-
-- [ ] `elkjs` npm package (uses WebAssembly ELK build for performance)
-- [ ] Install in both `lib/` (peer dependency) and `example/` (dev dependency)
-
-### Configuration (`lib/defaults.js` additions)
-
-- [ ] `horizontalGap` (default: 40) — maps to `elk.spacing.nodeNode`
-- [ ] `verticalGap` (default: 60) — maps to `elk.layered.spacing.nodeNodeBetweenLayers`
-- [ ] Configurable per-layout-call via options object
-
-### ELK Graph Construction (`buildElkGraph`)
-
-- [ ] Converts React Flow nodes + edges into ELK input format:
-  ```
-  { id: 'root', layoutOptions: {...}, children: [...], edges: [...] }
-  ```
-- [ ] Each node gets `width` and `height` from `data.width` / `data.height`, falling back to `DEFAULTS.nodeWidth` / `DEFAULTS.nodeHeight`
-- [ ] Merge nodes may have a different size (e.g., smaller circle) specified via their data
-- [ ] ELK layout options:
-  - `'elk.algorithm': 'layered'`
-  - `'elk.direction': 'DOWN'` — top-to-bottom vertical layout
-  - `'elk.spacing.nodeNode'`: from `horizontalGap` config
-  - `'elk.layered.spacing.nodeNodeBetweenLayers'`: from `verticalGap` config
-  - `'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF'` — balanced node placement
-  - `'elk.edgeRouting': 'ORTHOGONAL'` — (ELK's routing is unused, but needed for correct layer spacing)
-
-### Graph Structure (handled by ELK automatically)
-
-- [ ] **Root node**: node with no incoming edges — ELK places it in the first layer
-- [ ] **Sequential flow**: node with exactly one output edge → ELK places child in next layer, aligned below parent
-- [ ] **Branching**: node with 2+ output edges → ELK spreads children horizontally in the same layer
-  - Branches ordered left-to-right by the order of output edges (first edge = leftmost branch)
-  - Parent centered above children (ELK's default behavior with BRANDES_KOEPF)
-- [ ] **Merge node**: user marks via `data.isMerge = true`
-  - ELK places it in the correct layer (below deepest branch) based on edge connectivity
-  - Edges from shorter branches naturally route down to reach the merge node's layer
-- [ ] **Nested branches**: each sub-branch group has its own merge node — ELK handles layer nesting automatically
-- [ ] Unlimited nesting depth
-
-### Adding Nodes
-
-- [ ] **Batch API**: `addNodesToLayout(existingNodes, existingEdges, parentId, newNodes, newEdges, config?)` — user provides nodes + edges in a single call
-  - Merges new nodes/edges into existing graph
-  - Runs ELK layout on the full graph to compute all positions
-  - Returns updated nodes array with new positions
-  - Edge connections managed by the user (library only handles positioning)
-- [ ] **Drop API**: `onDropNode(parentId, nodeData)` — hook/callback for drag-and-drop from user-built palette
-  - User builds their own drag source (palette, toolbar, etc.)
-  - Library provides the drop handler that positions the node in the layout
-  - Internally calls `addNodesToLayout` with the single new node
-
-### Layout Triggers
-
-- [ ] **Auto on node addition**: layout recalculates full graph when nodes are added via API
-- [ ] **Manual full re-layout**: `layoutGraph()` API recalculates ALL node positions from scratch
-  - Resets any manually-dragged positions (unpins everything)
-  - Runs ELK on the full graph from scratch
-- [ ] Node drag: user can freely drag nodes to new positions
-  - Dragged positions are respected until `layoutGraph()` is called
-  - Adding new nodes does NOT reset previously dragged positions (only affects the insertion area)
-
-### Public API
-
-- [ ] `layoutGraph(nodes, edges, config?)` — run ELK layout on all nodes, returns positioned nodes array (async — ELK is async)
-- [ ] `addNodesToLayout(existingNodes, existingEdges, parentId, newNodes, newEdges, config?)` — add nodes, run layout, returns updated nodes array (async)
-- [ ] `useAutoLayout(config?)` — React hook that integrates with React Flow, provides `addNodes` and `layoutAll` functions
-- [ ] Export from `lib/index.js`
-
-### Merge Node Component (`lib/MergeNode.jsx`) — NEW
-
-- [ ] Circular node component for merge points
-- [ ] Configurable size via `data.width` / `data.height` (default: smaller than regular nodes)
-- [ ] Multiple input ports on top (one per incoming branch edge)
-- [ ] Single output port on bottom
-- [ ] `data.isMerge = true` flag for layout engine detection
-- [ ] Visual styling: circular shape, distinct from regular square nodes
-
-### Branch Expand/Collapse
-
-#### Collapse Behavior
-
-- [ ] **Full group collapse**: clicking the toggle on a branch node hides ALL content between it and its merge node — including the if/else/else-if nodes, the merge node itself, and all edges between them
-- [ ] A **direct edge** is shown from the branch node to the merge node's child (the node after the merge), skipping all hidden content
-- [ ] The layout **closes the vertical gap** — nodes below the collapsed group shift up
-- [ ] **Nested branches** inside a collapsed group are auto-collapsed; expanding the parent restores the previous nested expand/collapse state
-
-#### Per-Branch Collapse
-
-- [ ] Each individual branch path (e.g., only the "if" path) can be independently collapsed/expanded
-- [ ] When a single branch is collapsed, its nodes are hidden and the horizontal **space is preserved** (empty column remains so layout doesn't shift other branches)
-- [ ] The merge node stays visible when only individual branches are collapsed (merge hides only on full group collapse)
-- [ ] Default behavior is full group collapse; per-branch collapse is opt-in via config: `perBranchCollapse: true`
-
-#### Toggle UI
-
-- [ ] Small +/− icon at the **bottom-right corner** of the branch node
-- [ ] Icon indicates current state: `−` when expanded, `+` when collapsed
-- [ ] Clicking the icon toggles the collapse state
-
-#### State Management
-
-- [ ] **User-controlled** via node data: `data.collapsed = true | false`
-  - For full group collapse: set `data.collapsed = true` on the branch node
-  - For per-branch collapse: set `data.collapsed = true` on individual branch child nodes (if/else/else-if nodes)
-- [ ] Library reads `data.collapsed` and computes visible nodes/edges accordingly
-- [ ] User receives `onToggleCollapse(nodeId, collapsed)` callback to update their state
-
-#### Animation
-
-- [ ] **Configurable**: animation on by default, can be disabled via `collapseAnimation: false`
-- [ ] When enabled: nodes fade in/out and slide to new positions over ~300ms
-- [ ] When disabled: instant snap
-
-#### Layout Integration
-
-- [ ] Layout engine respects collapsed state when computing positions
-- [ ] Collapsed branch groups are treated as a single node (branch node only) for layout purposes
-- [ ] `layoutGraph()` preserves current collapsed states unless user explicitly resets them
+- Handle counts are NOT stored in node data — they're derived from edges
+- `injectHandleCounts(nodes, edges)` scans all edges and stamps `inputs`/`outputs` into node data
+- On edge deletion, remaining handles are re-indexed to stay contiguous (no gaps)
+- This ensures handle IDs always match between nodes and edges
 
 ---
 
-## 12. Implementation Order
+## 12. Implementation Phases
 
-### Phase 1: Edge Separation & Rounding (done)
+### Phase 1: Core Routing + Edge Separation + Rounding (COMPLETE)
 
-1. [x] Add `edgeSeparation` and `bendRadius` to `DEFAULTS` in `lib/defaults.js`
-2. [x] Add `separateOverlappingEdges()` function to `lib/orthogonalRouter.js`
-3. [x] Update `waypointsToSvgPath()` in `lib/orthogonalRouter.js` to support rounded corners via `bendRadius`
-4. [x] Create `lib/EdgeRoutingProvider.jsx` — centralized path computation + separation + rounding
-5. [x] Modify `lib/OrthogonalEdge.jsx` — read from context, fallback to standalone computation
-6. [x] Update `lib/index.js` — export `EdgeRoutingProvider`
-7. [x] Update `example/src/App.jsx` — add `<EdgeRoutingProvider>` wrapped around `<ReactFlow>` with `<ReactFlowProvider>`
+1. [x] Core orthogonal routing algorithm
+2. [x] Edge separation / overlap prevention
+3. [x] Rounded corners on bends
+4. [x] EdgeRoutingProvider for centralized computation
+5. [x] OrthogonalEdge component
 
-### Phase 2: Auto-Layout Engine (elkjs)
+### Phase 2: Layout Engine + Node Components (COMPLETE)
 
-8. [ ] Install `elkjs` dependency in `example/` (and document as peer dependency for `lib/`)
-9. [ ] Add `horizontalGap`, `verticalGap`, `perBranchCollapse`, `collapseAnimation` to `DEFAULTS` in `lib/defaults.js`
-10. [ ] Create `lib/layoutEngine.js` — elkjs wrapper + collapse logic
-   - [ ] `buildElkGraph(nodes, edges, config)` — convert React Flow nodes/edges to ELK input format
-   - [ ] `applyElkPositions(elkGraph, originalNodes)` — map ELK output positions back to React Flow nodes
-   - [ ] `layoutGraph(nodes, edges, config?)` — async entry point: build ELK graph → run layout → return positioned nodes
-   - [ ] `addNodesToLayout(existingNodes, existingEdges, parentId, newNodes, newEdges, config?)` — merge + layout
-   - [ ] `getVisibleGraph(nodes, edges)` — filter out collapsed nodes/edges, generate direct bypass edges
-11. [ ] Create `lib/MergeNode.jsx` — circular merge node component
-12. [ ] Create `lib/BranchNode.jsx` — branch node with expand/collapse toggle (+/− icon at bottom-right)
-13. [ ] Create `lib/useAutoLayout.js` — React hook integrating elkjs layout + collapse with React Flow
-14. [ ] Update `lib/index.js` — export layout engine, MergeNode, BranchNode, useAutoLayout
-15. [ ] Update `example/src/App.jsx` — demo with branching, merge, collapse/expand, add-node
-16. [ ] Test all layout and collapse verification checklist items
+6. [x] Dagre layout engine (`lib/dagreLayout.js`)
+7. [x] ELK layout engine (`lib/layoutEngine.js`)
+8. [x] SquareNode with dynamic handles + useUpdateNodeInternals
+9. [x] BranchNode with collapse toggle + dynamic handles
+10. [x] MergeNode (circular, dynamic entry side)
+11. [x] Collapse/expand logic (`getVisibleGraph`)
 
----
+### Phase 3: Dynamic Graph Operations (COMPLETE)
 
-## 13. Edge Labels (`lib/OrthogonalEdge.jsx`)
-
-### Overview
-
-- [ ] Display text labels on edges, positioned on the first vertical segment (stub going down from source handle)
-- [ ] Generic library feature — any edge can have a label via `edge.data.label`
-- [ ] Primary use case: branch node output edges labeled "If", "Else If", "Else"
-
-### Label Data
-
-- [ ] User passes label as `edge.data.label` (string)
-- [ ] If `data.label` is falsy/absent, no label is rendered
-- [ ] Example: `makeEdge(..., { label: 'If' })`
-
-### Label Positioning
-
-- [ ] Label appears on the **first vertical segment** of the edge (the source stub, from source handle going down)
-- [ ] Centered horizontally **on** the vertical segment (same x as the segment)
-- [ ] Vertically placed at the **midpoint** of the first vertical segment
-- [ ] A small white/opaque background behind the text prevents overlap with the edge line
-
-### Label Orientation
-
-- [ ] **Horizontal text** — normal left-to-right reading direction
-- [ ] Text centered over the segment line
-
-### Label Styling
-
-- [ ] Default: simple text with a small opaque background for readability
-- [ ] User can override via `edge.data.labelStyle` (React inline style object)
-- [ ] User can override via `edge.data.labelClassName` (CSS class string)
-- [ ] If both are provided, both are applied (className on element, style as inline)
-
-### Configuration (`lib/defaults.js` additions)
-
-- [ ] `edgeLabelFontSize` (default: 11) — px font size for edge labels
-- [ ] `edgeLabelOffset` (default: 4) — px vertical offset from segment midpoint (fine-tuning)
-- [ ] `edgeLabelBackground` (default: '#ffffff') — background color behind label text
-
-### Rendering
-
-- [ ] Labels rendered as `<text>` (or `<foreignObject>`) elements inside the edge SVG group
-- [ ] Positioned using the pre-computed edge path points (from `EdgeRoutingProvider` or fallback)
-- [ ] The label position is computed from the first two points of the path (source port → stub end)
-- [ ] `text-anchor: middle` for horizontal centering
-- [ ] Small `<rect>` behind text for background (with 2-3px padding)
-
-### Implementation Steps
-
-1. [ ] Add `edgeLabelFontSize`, `edgeLabelOffset`, `edgeLabelBackground` to `DEFAULTS` in `lib/defaults.js`
-2. [ ] Modify `lib/OrthogonalEdge.jsx`:
-   - [ ] Read `data.label`, `data.labelStyle`, `data.labelClassName` from edge props
-   - [ ] Compute label position from the first vertical segment of the path
-   - [ ] Render `<text>` element with background `<rect>` when label is present
-   - [ ] Apply user's `labelStyle` / `labelClassName` if provided
-3. [ ] Modify `EdgeRoutingProvider.jsx`:
-   - [ ] Pass `points` array to the edge context (already done — `{ path, points }`)
-   - [ ] OrthogonalEdge needs access to points to compute label position
-4. [ ] Update `example/src/App.jsx`:
-   - [ ] Add `data.label` to branch output edges (e.g., "If", "Else If", "Else")
-   - [ ] Demo custom styling on one label
-5. [ ] Update `lib/index.js` if any new exports needed
-
-### Verification
-
-- [ ] Branch edges show "If", "Else If", "Else" labels on the vertical segment below the branch node
-- [ ] Labels are horizontally centered on the edge line
-- [ ] Labels have a readable background that doesn't bleed into the edge
-- [ ] Labels respect `edgeLabelFontSize` from config
-- [ ] Custom `data.labelStyle` overrides default styling
-- [ ] Custom `data.labelClassName` adds CSS class to label element
-- [ ] Edges without `data.label` render normally (no empty label element)
-- [ ] Labels re-position correctly when nodes are dragged
-- [ ] Labels work with both EdgeRoutingProvider (context) and fallback (standalone) modes
+12. [x] Add node from node (+ button, mini layout)
+13. [x] Add node inline on edge (+ button)
+14. [x] Connect to existing node
+15. [x] Delete edge with handle re-indexing
+16. [x] Branch-aware node addition (auto-label + merge connection)
+17. [x] Edge labels
+18. [x] Edge selection + delete button
+19. [x] Edge-driven handle architecture (injectHandleCounts)
 
 ---
 
-## 14. Edge Selection & Delete Button (`lib/OrthogonalEdge.jsx`)
-
-### Overview
-
-- [ ] Visual edge selection (highlight color + thicker stroke)
-- [ ] Delete button on edge hover and selection, at edge midpoint
-- [ ] Delete action via user callback `data.onDeleteEdge(edgeId)`
-- [ ] Configurable delete button (default `×` icon, user can provide custom component)
-
-### Selection Visual
-
-- [ ] When edge is selected: stroke color changes to `#1976d2` (blue), stroke becomes thicker
-- [ ] Selected stroke width = `edgeStrokeWidth * 2` (or a configurable multiplier)
-- [ ] Matches node selection highlight color for consistency
-
-### Delete Button
-
-- [ ] Appears at the geometric **midpoint** of the full edge path
-- [ ] Visible on **hover** and when edge is **selected**
-- [ ] Default appearance: small circle with `×` icon (similar to React Flow defaults)
-- [ ] User can pass `data.deleteButton` (React component/element) to render a custom button
-- [ ] Clicking the button calls `data.onDeleteEdge(edgeId)` if provided
-- [ ] Button rendered via React Flow's `EdgeLabelRenderer` (HTML overlay, not SVG)
-
-### Configuration
-
-- [ ] `edgeSelectedColor` (default: '#1976d2') in DEFAULTS
-- [ ] `edgeSelectedWidth` (default: 2.5) in DEFAULTS
-
-### Implementation Steps
-
-1. [ ] Add `edgeSelectedColor`, `edgeSelectedWidth` to DEFAULTS
-2. [ ] Modify `OrthogonalEdge.jsx`:
-   - [ ] Accept `selected` prop from React Flow
-   - [ ] Track hover state with `onMouseEnter`/`onMouseLeave` on interaction path
-   - [ ] Compute midpoint of the edge path for delete button position
-   - [ ] Apply selection styles (color + thickness) when selected
-   - [ ] Render delete button (via `EdgeLabelRenderer`) when hovered or selected
-   - [ ] Default delete button: circular `×` icon
-   - [ ] Support `data.deleteButton` for custom button component
-   - [ ] Call `data.onDeleteEdge(id)` on button click
-3. [ ] Update example App to pass `onDeleteEdge` callback
-
-### Verification
-
-- [ ] Clicking an edge selects it with blue highlight and thicker stroke
-- [ ] Hovering over an edge shows the delete button at the midpoint
-- [ ] Selecting an edge also shows the delete button
-- [ ] Clicking the delete button calls the `onDeleteEdge` callback
-- [ ] Custom `data.deleteButton` component renders instead of default `×`
-- [ ] Delete button disappears when edge is deselected and not hovered
-- [ ] Edge labels still render correctly alongside the delete button
-- [ ] Selection highlight works with both EdgeRoutingProvider and fallback modes
-
----
-
-## 15. Future Requirements
+## 13. Future Requirements
 
 <!-- Add new requirements below. Use [ ] for planned items. -->
 <!-- Example:

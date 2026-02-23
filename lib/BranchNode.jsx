@@ -113,8 +113,9 @@ const BranchNode = memo(function BranchNode({ id, data, selected }) {
       >
         {collapsed ? '+' : '\u2212'}
       </button>
-      {data.onAddNode && (
+      {(data.renderMenu || data.onAddNode) && (
         <AddNodeMenu
+          renderMenu={data.renderMenu}
           nodeId={id}
           onAddNode={data.onAddNode}
           otherNodes={data.otherNodes}

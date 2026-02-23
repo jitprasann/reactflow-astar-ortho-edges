@@ -80,8 +80,9 @@ const SquareNode = memo(function SquareNode({ id, data, selected }) {
           />
         );
       })}
-      {data.onAddNode && (
+      {(data.renderMenu || data.onAddNode) && (
         <AddNodeMenu
+          renderMenu={data.renderMenu}
           nodeId={id}
           onAddNode={data.onAddNode}
           otherNodes={data.otherNodes}
