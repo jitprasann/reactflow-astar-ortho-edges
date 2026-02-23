@@ -10,9 +10,6 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 
 import OrthogonalEdge from "./OrthogonalEdge.jsx";
-import SquareNode from "./SquareNode.jsx";
-import MergeNode from "./MergeNode.jsx";
-import BranchNode from "./BranchNode.jsx";
 import EdgeRoutingProvider from "./EdgeRoutingProvider.jsx";
 import { getVisibleGraph } from "./layoutEngine.js";
 import { layoutGraphDagre } from "./dagreLayout.js";
@@ -27,11 +24,6 @@ import {
     placeNewNodes,
 } from "./graphUtils.js";
 
-const builtInNodeTypes = {
-    square: SquareNode,
-    merge: MergeNode,
-    branch: BranchNode,
-};
 const builtInEdgeTypes = { orthogonal: OrthogonalEdge };
 
 /**
@@ -76,7 +68,7 @@ function OrthogonalFlowInner({
     renderEdgeMenuRef.current = renderEdgeMenu;
 
     const mergedNodeTypes = useMemo(
-        () => ({ ...builtInNodeTypes, ...(userNodeTypes || {}) }),
+        () => userNodeTypes || {},
         [userNodeTypes],
     );
     const mergedEdgeTypes = useMemo(

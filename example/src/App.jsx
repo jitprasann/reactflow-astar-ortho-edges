@@ -9,6 +9,16 @@ import {
 } from "../../lib/index.js";
 import "reactflow/dist/style.css";
 
+import SquareNode from "./SquareNode.jsx";
+import BranchNode from "./BranchNode.jsx";
+import MergeNode from "./MergeNode.jsx";
+
+const nodeTypes = {
+    square: SquareNode,
+    branch: BranchNode,
+    merge: MergeNode,
+};
+
 // --- App business logic: IDs, labels ---
 let idCounter = 1;
 function nextId(prefix) {
@@ -218,6 +228,7 @@ export default function App() {
                 onConnectNodes={handleConnectNodes}
                 renderNodeMenu={renderNodeMenu}
                 renderEdgeMenu={renderEdgeMenu}
+                nodeTypes={nodeTypes}
             >
                 <Controls />
                 <Background />
