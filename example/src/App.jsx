@@ -5,7 +5,6 @@ import {
     Controls,
     Background,
     layoutGraphDagre,
-    injectHandleCounts,
 } from "../../lib/index.js";
 import "reactflow/dist/style.css";
 
@@ -54,7 +53,7 @@ const rawEdges = [
 ];
 
 // Pre-layout and inject handle counts for initial render
-const initialNodes = injectHandleCounts(layoutGraphDagre(rawNodes, rawEdges), rawEdges);
+const initialNodes = layoutGraphDagre(rawNodes, rawEdges);
 const initialEdges = rawEdges;
 
 // --- Menu styles ---

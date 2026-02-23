@@ -16,7 +16,6 @@ import { layoutGraphDagre } from "./dagreLayout.js";
 import {
     nextOutputIdx,
     nextInputIdx,
-    injectHandleCounts,
     normalizeEdge,
     assignHandles,
     reindexHandlesAfterDelete,
@@ -93,13 +92,10 @@ function OrthogonalFlowInner({
         const { visibleNodes: vNodes, visibleEdges: vEdges } = getVisibleGraph(updatedNodes, curEdges);
         const positioned = layoutGraphDagre(vNodes, vEdges);
         const posMap = new Map(positioned.map((n) => [n.id, n.position]));
-        const finalNodes = injectHandleCounts(
-            updatedNodes.map((n) => {
-                const pos = posMap.get(n.id);
-                return pos ? { ...n, position: pos } : n;
-            }),
-            curEdges,
-        );
+        const finalNodes = updatedNodes.map((n) => {
+            const pos = posMap.get(n.id);
+            return pos ? { ...n, position: pos } : n;
+        });
         fireChange(finalNodes, curEdges);
     }, [fireChange]);
 
@@ -177,7 +173,7 @@ function OrthogonalFlowInner({
             position: posMap.get(n.id) || n.position,
         }));
 
-        const finalNodes = injectHandleCounts([...updatedNodes, ...positionedNew], allNextEdges);
+        const finalNodes = [...updatedNodes, ...positionedNew];
         fireChange(finalNodes, allNextEdges);
     }, [fireChange]);
 
@@ -207,10 +203,7 @@ function OrthogonalFlowInner({
         const newEdges = assignHandles(normalizedNewEdges, updatedEdges);
 
         const allFinalEdges = [...updatedEdges, ...newEdges];
-        const finalNodes = injectHandleCounts(
-            placeNewNodes(sourceId, parentNode, curNodes, newNodes, newEdges, updatedEdges),
-            allFinalEdges,
-        );
+        const finalNodes = placeNewNodes(sourceId, parentNode, curNodes, newNodes, newEdges, updatedEdges);
         fireChange(finalNodes, allFinalEdges);
     }, [fireChange]);
 
@@ -227,8 +220,7 @@ function OrthogonalFlowInner({
         const [assignedEdge] = assignHandles([rawEdge], curEdges);
 
         const allNextEdges = [...curEdges, assignedEdge];
-        const finalNodes = injectHandleCounts(curNodes, allNextEdges);
-        fireChange(finalNodes, allNextEdges);
+        fireChange(curNodes, allNextEdges);
     }, [fireChange]);
 
     const handleDeleteEdge = useCallback((edgeId) => {
@@ -239,14 +231,13 @@ function OrthogonalFlowInner({
 
         const remaining = curEdges.filter((e) => e.id !== edgeId);
         const reindexed = reindexHandlesAfterDelete(remaining, deleted);
-        const finalNodes = injectHandleCounts(curNodes, reindexed);
-        fireChange(finalNodes, reindexed);
+        fireChange(curNodes, reindexed);
     }, [fireChange]);
 
     const handleLayout = useCallback(() => {
         const curNodes = nodesRef.current;
         const curEdges = edgesRef.current;
-        const finalNodes = injectHandleCounts(layoutGraphDagre(curNodes, curEdges), curEdges);
+        const finalNodes = layoutGraphDagre(curNodes, curEdges);
         fireChange(finalNodes, curEdges);
     }, [fireChange]);
 
