@@ -104,10 +104,10 @@ export default function OrthogonalEdge({
   let labelX, labelY;
 
   if (label && edgePoints && edgePoints.length >= 2) {
-    // Position on the last vertical segment (target stub start → target port)
+    // Position at the start of the last vertical segment, 8px below
     const last = edgePoints.length - 1;
     labelX = edgePoints[last].x;
-    labelY = (edgePoints[last - 1].y + edgePoints[last].y) / 2 + cfg.edgeLabelOffset;
+    labelY = edgePoints[last - 1].y + 16;
   }
 
   const labelContent = label
@@ -214,7 +214,7 @@ export default function OrthogonalEdge({
             onMouseLeave={onMouseLeave}
           >
             {/* Inline add button */}
-            {data?.onAddNodeInline && (
+            {hasEdgeMenu && (
               <div style={{ position: 'relative' }}>
                 <button
                   onClick={toggleInlineMenu}
@@ -238,35 +238,42 @@ export default function OrthogonalEdge({
                     }}
                     onMouseEnter={onMouseEnter}
                     onMouseLeave={onMouseLeave}
+                    onClick={() => setShowInlineMenu(false)}
                   >
-                    <div
-                      style={{
-                        padding: '4px 12px 2px',
-                        fontSize: 10,
-                        color: '#999',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Insert between
-                    </div>
-                    <div
-                      onClick={handleInlineAdd('node')}
-                      style={menuItemStyle}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      Add Node
-                    </div>
-                    <div
-                      onClick={handleInlineAdd('branch')}
-                      style={{ ...menuItemStyle, borderTop: '1px solid #eee' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      Add Branch
-                    </div>
+                    {data?.renderEdgeMenu ? (
+                      data.renderEdgeMenu()
+                    ) : (
+                      <>
+                        <div
+                          style={{
+                            padding: '4px 12px 2px',
+                            fontSize: 10,
+                            color: '#999',
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          Insert between
+                        </div>
+                        <div
+                          onClick={handleInlineAdd('node')}
+                          style={menuItemStyle}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          Add Node
+                        </div>
+                        <div
+                          onClick={handleInlineAdd('branch')}
+                          style={{ ...menuItemStyle, borderTop: '1px solid #eee' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          Add Branch
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

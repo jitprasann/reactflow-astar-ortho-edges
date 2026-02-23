@@ -9,7 +9,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import { OrthogonalEdge } from "./OrthogonalEdge.jsx";
+import OrthogonalEdge from "./OrthogonalEdge.jsx";
 import SquareNode from "./SquareNode.jsx";
 import MergeNode from "./MergeNode.jsx";
 import BranchNode from "./BranchNode.jsx";
