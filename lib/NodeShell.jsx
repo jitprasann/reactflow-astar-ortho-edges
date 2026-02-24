@@ -234,14 +234,8 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, varian
       )}
 
       {/* AddNodeMenu */}
-      {(data.renderMenu || data.onAddNode) && (
-        <AddNodeMenu
-          renderMenu={data.renderMenu}
-          nodeId={id}
-          onAddNode={data.onAddNode}
-          otherNodes={data.otherNodes}
-          onConnectToExisting={data.onConnectToExisting}
-        />
+      {data.renderMenu && (
+        <AddNodeMenu renderMenu={data.renderMenu} />
       )}
     </div>
   );

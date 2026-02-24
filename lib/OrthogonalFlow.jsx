@@ -12,16 +12,14 @@ import "reactflow/dist/style.css";
 import OrthogonalEdge from "./OrthogonalEdge.jsx";
 import EdgeRoutingProvider from "./EdgeRoutingProvider.jsx";
 import { getVisibleGraph } from "./layoutEngine.js";
-import { layoutGraphDagre } from "./dagreLayout.js";
 import {
-    nextOutputIdx,
-    nextInputIdx,
-    normalizeEdge,
-    assignHandles,
-    reindexHandlesAfterDelete,
-    findMergeNode,
-    placeNewNodes,
-} from "./graphUtils.js";
+    toggleCollapse,
+    addNode,
+    addNodeInline,
+    connectNodes,
+    deleteEdge,
+    layoutAll,
+} from "./graphActions.js";
 
 const builtInEdgeTypes = { orthogonal: OrthogonalEdge };
 
@@ -84,161 +82,33 @@ function OrthogonalFlowInner({
     }, []);
 
     const onToggleCollapse = useCallback((nodeId, collapsed) => {
-        const curNodes = nodesRef.current;
-        const curEdges = edgesRef.current;
-        const updatedNodes = curNodes.map((n) =>
-            n.id === nodeId ? { ...n, data: { ...n.data, collapsed } } : n,
-        );
-        const { visibleNodes: vNodes, visibleEdges: vEdges } = getVisibleGraph(updatedNodes, curEdges);
-        const positioned = layoutGraphDagre(vNodes, vEdges);
-        const posMap = new Map(positioned.map((n) => [n.id, n.position]));
-        const finalNodes = updatedNodes.map((n) => {
-            const pos = posMap.get(n.id);
-            return pos ? { ...n, position: pos } : n;
-        });
-        fireChange(finalNodes, curEdges);
+        const result = toggleCollapse(nodesRef.current, edgesRef.current, nodeId, collapsed);
+        if (result) fireChange(result.nodes, result.edges);
     }, [fireChange]);
 
     const handleAddNode = useCallback((parentId, type) => {
-        const curNodes = nodesRef.current;
-        const curEdges = edgesRef.current;
-        const parentNode = curNodes.find((n) => n.id === parentId);
-        if (!parentNode) return;
-
-        const mergeNodeId = parentNode.type === "branch"
-            ? findMergeNode(parentId, curNodes, curEdges)
-            : null;
-
-        const context = {
-            parentNode,
-            mergeNodeId,
-            existingOutputCount: nextOutputIdx(parentId, curEdges),
-        };
-
-        const factory = onCreateNodeRef.current;
-        if (!factory) return;
-        const result = factory(parentId, type, context);
-        if (!result) return;
-
-        const { nodes: rawNewNodes, edges: rawNewEdges } = result;
-
-        // Ensure new nodes have position
-        const newNodes = rawNewNodes.map((n) => ({
-            ...n,
-            position: n.position || { x: 0, y: 0 },
-        }));
-
-        // Normalize and assign handles to new edges
-        const normalizedNewEdges = rawNewEdges.map(normalizeEdge);
-        const newEdges = assignHandles(normalizedNewEdges, curEdges);
-
-        // Collect existing direct children of parent
-        const existingSiblingIds = curEdges
-            .filter((e) => e.source === parentId)
-            .map((e) => e.target);
-        const existingSiblings = curNodes.filter((n) => existingSiblingIds.includes(n.id));
-
-        // Mini graph: parent + existing siblings + new nodes
-        const miniNodes = [parentNode, ...existingSiblings, ...newNodes];
-        const newNodeIds = new Set(newNodes.map((n) => n.id));
-        const siblingIds = new Set(existingSiblingIds);
-        const miniEdges = [
-            ...curEdges.filter((e) => e.source === parentId && siblingIds.has(e.target)),
-            ...newEdges.filter((e) => {
-                const miniIds = new Set(miniNodes.map((n) => n.id));
-                return miniIds.has(e.source) && miniIds.has(e.target);
-            }),
-        ];
-
-        const mini = layoutGraphDagre(miniNodes, miniEdges);
-        const miniParent = mini.find((n) => n.id === parentId);
-        if (!miniParent) return;
-
-        const dx = parentNode.position.x - miniParent.position.x;
-        const dy = parentNode.position.y - miniParent.position.y;
-
-        const posMap = new Map();
-        for (const n of mini) {
-            if (n.id === parentId) continue;
-            posMap.set(n.id, { x: n.position.x + dx, y: n.position.y + dy });
-        }
-
-        const allNextEdges = [...curEdges, ...newEdges];
-        const updatedNodes = curNodes.map((n) => {
-            const pos = posMap.get(n.id);
-            return pos ? { ...n, position: pos } : n;
-        });
-        const positionedNew = newNodes.map((n) => ({
-            ...n,
-            position: posMap.get(n.id) || n.position,
-        }));
-
-        const finalNodes = [...updatedNodes, ...positionedNew];
-        fireChange(finalNodes, allNextEdges);
+        const result = addNode(nodesRef.current, edgesRef.current, parentId, type, onCreateNodeRef.current);
+        if (result) fireChange(result.nodes, result.edges);
     }, [fireChange]);
 
     const handleAddNodeInline = useCallback((edgeId, type) => {
-        const curNodes = nodesRef.current;
-        const curEdges = edgesRef.current;
-        const edge = curEdges.find((e) => e.id === edgeId);
-        if (!edge) return;
-
-        const { source: sourceId, target: targetId } = edge;
-        const parentNode = curNodes.find((n) => n.id === sourceId);
-        const updatedEdges = curEdges.filter((e) => e.id !== edgeId);
-
-        const factory = onCreateNodeInlineRef.current;
-        if (!factory) return;
-        const result = factory(edgeId, sourceId, targetId, type, { edge });
-        if (!result) return;
-
-        const { nodes: rawNewNodes, edges: rawNewEdges } = result;
-
-        const newNodes = rawNewNodes.map((n) => ({
-            ...n,
-            position: n.position || { x: 0, y: 0 },
-        }));
-
-        const normalizedNewEdges = rawNewEdges.map(normalizeEdge);
-        const newEdges = assignHandles(normalizedNewEdges, updatedEdges);
-
-        const allFinalEdges = [...updatedEdges, ...newEdges];
-        const finalNodes = placeNewNodes(sourceId, parentNode, curNodes, newNodes, newEdges, updatedEdges);
-        fireChange(finalNodes, allFinalEdges);
+        const result = addNodeInline(nodesRef.current, edgesRef.current, edgeId, type, onCreateNodeInlineRef.current);
+        if (result) fireChange(result.nodes, result.edges);
     }, [fireChange]);
 
     const handleConnectToExisting = useCallback((sourceNodeId, targetNodeId) => {
-        const curEdges = edgesRef.current;
-        const curNodes = nodesRef.current;
-
-        const factory = onConnectNodesRef.current;
-        if (!factory) return;
-        const result = factory(sourceNodeId, targetNodeId, {});
-        if (!result) return;
-
-        const rawEdge = normalizeEdge(result.edge);
-        const [assignedEdge] = assignHandles([rawEdge], curEdges);
-
-        const allNextEdges = [...curEdges, assignedEdge];
-        fireChange(curNodes, allNextEdges);
+        const result = connectNodes(nodesRef.current, edgesRef.current, sourceNodeId, targetNodeId, onConnectNodesRef.current);
+        if (result) fireChange(result.nodes, result.edges);
     }, [fireChange]);
 
     const handleDeleteEdge = useCallback((edgeId) => {
-        const curEdges = edgesRef.current;
-        const curNodes = nodesRef.current;
-        const deleted = curEdges.find((e) => e.id === edgeId);
-        if (!deleted) return;
-
-        const remaining = curEdges.filter((e) => e.id !== edgeId);
-        const reindexed = reindexHandlesAfterDelete(remaining, deleted);
-        fireChange(curNodes, reindexed);
+        const result = deleteEdge(nodesRef.current, edgesRef.current, edgeId);
+        if (result) fireChange(result.nodes, result.edges);
     }, [fireChange]);
 
     const handleLayout = useCallback(() => {
-        const curNodes = nodesRef.current;
-        const curEdges = edgesRef.current;
-        const finalNodes = layoutGraphDagre(curNodes, curEdges);
-        fireChange(finalNodes, curEdges);
+        const result = layoutAll(nodesRef.current, edgesRef.current);
+        fireChange(result.nodes, result.edges);
     }, [fireChange]);
 
     // --- Attach methods to api object ---
@@ -259,9 +129,9 @@ function OrthogonalFlowInner({
         // Inject callbacks into node data
         const withCallbacks = nodes.map((n) => {
             const extra = {};
-            if (n.type === "branch") extra.onToggleCollapse = onToggleCollapse;
-            // Inject renderMenu for nodes that aren't merge nodes
-            if (n.type !== "merge" && renderNodeMenuRef.current) {
+            extra.onToggleCollapse = onToggleCollapse;
+            // Inject renderMenu so nodes can show app-provided menus
+            if (renderNodeMenuRef.current) {
                 extra.renderMenu = () => renderNodeMenuRef.current(n.id);
             }
             return Object.keys(extra).length > 0

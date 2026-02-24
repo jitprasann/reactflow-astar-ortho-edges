@@ -5,20 +5,12 @@ import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
  * Clicking it shows a dropdown with app-provided menu content.
  *
  * Props:
- *   renderMenu  - () => ReactElement — app provides the dropdown content
- *
- * Legacy props (still supported for backward compatibility):
- *   nodeId             - the parent node ID
- *   onAddNode          - callback(nodeId, type)
- *   otherNodes         - array of { id, label }
- *   onConnectToExisting - callback(sourceNodeId, targetNodeId)
+ *   renderMenu  - () => ReactElement|null — app provides the dropdown content.
+ *                 If renderMenu is not provided or returns null, nothing is rendered.
  */
-const AddNodeMenu = memo(function AddNodeMenu({ renderMenu, nodeId, onAddNode, otherNodes, onConnectToExisting }) {
+const AddNodeMenu = memo(function AddNodeMenu({ renderMenu }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
-
-  // If neither renderMenu nor legacy onAddNode provided, don't render
-  const hasMenu = !!(renderMenu || onAddNode);
 
   useEffect(() => {
     if (!open) return;
@@ -36,45 +28,10 @@ const AddNodeMenu = memo(function AddNodeMenu({ renderMenu, nodeId, onAddNode, o
     setOpen((o) => !o);
   }, []);
 
-  // Legacy handlers
-  const handleAdd = useCallback(
-    (type) => (e) => {
-      e.stopPropagation();
-      setOpen(false);
-      if (onAddNode) onAddNode(nodeId, type);
-    },
-    [nodeId, onAddNode]
-  );
+  if (!renderMenu) return null;
 
-  const handleConnect = useCallback(
-    (targetId) => (e) => {
-      e.stopPropagation();
-      setOpen(false);
-      if (onConnectToExisting) onConnectToExisting(nodeId, targetId);
-    },
-    [nodeId, onConnectToExisting]
-  );
-
-  if (!hasMenu) return null;
-
-  const hasConnectSection = otherNodes && otherNodes.length > 0 && onConnectToExisting;
-
-  const itemStyle = {
-    padding: '6px 12px',
-    cursor: 'pointer',
-    fontSize: 12,
-    color: '#333',
-  };
-
-  const sectionHeaderStyle = {
-    padding: '4px 12px 2px',
-    fontSize: 10,
-    color: '#999',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    userSelect: 'none',
-  };
+  const content = renderMenu();
+  if (!content) return null;
 
   return (
     <div
@@ -117,49 +74,7 @@ const AddNodeMenu = memo(function AddNodeMenu({ renderMenu, nodeId, onAddNode, o
           }}
           onClick={() => setOpen(false)}
         >
-          {renderMenu ? (
-            // New: app-provided menu content via render prop
-            renderMenu()
-          ) : (
-            // Legacy: hardcoded menu items
-            <>
-              <div style={sectionHeaderStyle}>Add new</div>
-              <div
-                onClick={handleAdd('node')}
-                style={{ ...itemStyle, borderBottom: '1px solid #eee' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                Add Node
-              </div>
-              <div
-                onClick={handleAdd('branch')}
-                style={itemStyle}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                Add Branch
-              </div>
-
-              {hasConnectSection && (
-                <>
-                  <div style={{ borderTop: '2px solid #eee', marginTop: 2 }} />
-                  <div style={sectionHeaderStyle}>Connect to</div>
-                  {otherNodes.map((n) => (
-                    <div
-                      key={n.id}
-                      onClick={handleConnect(n.id)}
-                      style={itemStyle}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      {n.label || n.id}
-                    </div>
-                  ))}
-                </>
-              )}
-            </>
-          )}
+          {content}
         </div>
       )}
     </div>

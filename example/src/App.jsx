@@ -177,24 +177,28 @@ export default function App() {
 
     // App-controlled menu CONTENT for node "+" button
     const renderNodeMenu = useCallback(
-        (nodeId) => (
-            <div>
-                <div style={sectionHeaderStyle}>Add new</div>
-                <MenuItem onClick={() => flowApi.addNode(nodeId, "node")}>Add Node</MenuItem>
-                <MenuItem onClick={() => flowApi.addNode(nodeId, "branch")} style={{ borderTop: "1px solid #eee" }}>
-                    Add Branch
-                </MenuItem>
-                <div style={{ borderTop: "2px solid #eee", marginTop: 2 }} />
-                <div style={sectionHeaderStyle}>Connect to</div>
-                {flowApi.getNodes && flowApi.getNodes()
-                    .filter((n) => n.id !== nodeId && !n.data?.isMerge)
-                    .map((n) => (
-                        <MenuItem key={n.id} onClick={() => flowApi.connectNodes(nodeId, n.id)}>
-                            {n.data?.label || n.id}
-                        </MenuItem>
-                    ))}
-            </div>
-        ),
+        (nodeId) => {
+            const node = flowApi.getNodes?.()?.find((n) => n.id === nodeId);
+            if (node?.data?.isMerge) return null;
+            return (
+                <div>
+                    <div style={sectionHeaderStyle}>Add new</div>
+                    <MenuItem onClick={() => flowApi.addNode(nodeId, "node")}>Add Node</MenuItem>
+                    <MenuItem onClick={() => flowApi.addNode(nodeId, "branch")} style={{ borderTop: "1px solid #eee" }}>
+                        Add Branch
+                    </MenuItem>
+                    <div style={{ borderTop: "2px solid #eee", marginTop: 2 }} />
+                    <div style={sectionHeaderStyle}>Connect to</div>
+                    {flowApi.getNodes && flowApi.getNodes()
+                        .filter((n) => n.id !== nodeId && !n.data?.isMerge)
+                        .map((n) => (
+                            <MenuItem key={n.id} onClick={() => flowApi.connectNodes(nodeId, n.id)}>
+                                {n.data?.label || n.id}
+                            </MenuItem>
+                        ))}
+                </div>
+            );
+        },
         [flowApi],
     );
 
