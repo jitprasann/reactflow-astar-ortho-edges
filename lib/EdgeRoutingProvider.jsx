@@ -163,7 +163,7 @@ export default function EdgeRoutingProvider({ children, config }) {
             const obstacles = [];
             for (const [id, n] of nodeInternals) {
                 if (id === edge.source || id === edge.target) continue;
-                if (id.startsWith('__phantom')) continue;
+                if (id.startsWith('__action')) continue;
                 obstacles.push({
                     id,
                     x: n.positionAbsolute?.x ?? n.position.x,

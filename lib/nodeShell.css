@@ -33,3 +33,83 @@
   background: #e3f2fd;
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.25);
 }
+
+/* --- Node label --- */
+
+.eq-pipeline-canvas-node-label {
+  background: #fff;
+}
+
+/* --- Node handles (invisible connection points) --- */
+
+.eq-pipeline-canvas-node-handle {
+  background: transparent !important;
+  border: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+}
+
+.eq-pipeline-canvas-action-output-handle {
+  opacity: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  border: none !important;
+  pointer-events: none !important;
+}
+
+/* --- ActionNode (compact) --- */
+
+.eq-pipeline-compact-action-node {
+  width: 24px;
+  height: 24px;
+  border: 2px dashed #999;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  font-size: 16px;
+  color: #666;
+  position: relative;
+}
+
+.eq-pipeline-compact-action-node:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #666;
+}
+
+.eq-pipeline-compact-action-handle {
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  border-radius: 4px !important;
+  transform: none !important;
+  opacity: 0 !important;
+  border: none !important;
+}
+
+.eq-pipeline-compact-action-input-handle {
+  opacity: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  border: none !important;
+  pointer-events: none !important;
+}
+
+.eq-pipeline-compact-action-menu {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  z-index: 20;
+  min-width: 140px;
+}

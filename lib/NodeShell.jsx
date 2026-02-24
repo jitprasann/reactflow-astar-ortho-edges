@@ -1,6 +1,7 @@
 import React, { memo, useEffect, useRef } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { DEFAULTS } from './defaults.js';
+import './nodeShell.css';
 
 /**
  * NodeShell — generic wrapper for orthogonal-flow nodes.
@@ -55,26 +56,27 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
     <div className={className} style={baseStyle}>
       {/* Label — absolutely positioned above the box */}
       {label && (
-        <div style={{
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          maxWidth: width,
-          textAlign: 'center',
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          textOverflow: 'ellipsis',
-          wordBreak: 'break-word',
-          marginBottom: 4,
-          fontSize: 12,
-          fontFamily: 'sans-serif',
-          lineHeight: 1.3,
-          pointerEvents: 'none',
-          background: '#fff',
-        }}>
+        <div
+          className="eq-pipeline-canvas-node-label"
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            maxWidth: width,
+            textAlign: 'center',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            textOverflow: 'ellipsis',
+            wordBreak: 'break-word',
+            marginBottom: 4,
+            fontSize: 12,
+            fontFamily: 'sans-serif',
+            lineHeight: 1.3,
+            pointerEvents: 'none',
+          }}>
           {label}
         </div>
       )}
@@ -90,15 +92,10 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             type="target"
             position={Position.Top}
             id={`input-${i}`}
+            className="eq-pipeline-canvas-node-handle"
             style={{
               left: `calc(50% + ${offset}px)`,
               transform: 'translateX(-50%)',
-              background: 'transparent',
-              width: 1,
-              height: 1,
-              border: 'none',
-              opacity: 0,
-              pointerEvents: 'none',
             }}
           />
         );
@@ -113,31 +110,25 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             type="source"
             position={Position.Bottom}
             id={`output-${i}`}
+            className="eq-pipeline-canvas-node-handle"
             style={{
               left: `calc(50% + ${offset}px)`,
               transform: 'translateX(-50%)',
-              background: 'transparent',
-              width: 1,
-              height: 1,
-              border: 'none',
-              opacity: 0,
-              pointerEvents: 'none',
             }}
           />
         );
       })}
 
-      {/* Hidden handle for phantom edge connection */}
+      {/* Hidden handle for action edge connection */}
       <Handle
         type="source"
         position={Position.Bottom}
-        id="__phantom-output"
+        id="__action-output"
+        className="eq-pipeline-canvas-action-output-handle"
         style={{
-          opacity: 0,
-          width: 1,
-          height: 1,
-          border: 'none',
-          pointerEvents: 'none',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          bottom: 0,
         }}
       />
     </div>

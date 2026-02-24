@@ -3,14 +3,12 @@ import ReactFlow, {
     ReactFlowProvider,
     MarkerType,
     addEdge,
-    applyNodeChanges,
-    applyEdgeChanges,
     useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
 import OrthogonalEdge from "./OrthogonalEdge.jsx";
-import PhantomNode from "./PhantomNode.jsx";
+import ActionNode from "./ActionNode.jsx";
 import EdgeRoutingProvider from "./EdgeRoutingProvider.jsx";
 import { getVisibleGraph } from "./layoutEngine.js";
 import { DEFAULTS } from "./defaults.js";
@@ -24,7 +22,7 @@ import {
 } from "./graphActions.js";
 
 const builtInEdgeTypes = { orthogonal: OrthogonalEdge };
-const builtInNodeTypes = { __phantom: PhantomNode };
+const builtInNodeTypes = { __action: ActionNode };
 
 /**
  * Internal component that renders inside ReactFlowProvider.
@@ -33,6 +31,8 @@ function OrthogonalFlowInner({
     nodes,
     edges,
     onChange,
+    onNodesChange: appOnNodesChange,
+    onEdgesChange: appOnEdgesChange,
     onCreateNode,
     onCreateNodeInline,
     onConnectNodes,
@@ -66,8 +66,12 @@ function OrthogonalFlowInner({
     renderNodeMenuRef.current = renderNodeMenu;
     const renderEdgeMenuRef = useRef(renderEdgeMenu);
     renderEdgeMenuRef.current = renderEdgeMenu;
+    const appOnNodesChangeRef = useRef(appOnNodesChange);
+    appOnNodesChangeRef.current = appOnNodesChange;
+    const appOnEdgesChangeRef = useRef(appOnEdgesChange);
+    appOnEdgesChangeRef.current = appOnEdgesChange;
 
-    // --- Phantom node hover tracking ---
+    // --- Action node hover tracking ---
     const [hoveredNodeId, setHoveredNodeId] = useState(null);
     const hoverTimeoutRef = useRef(null);
     const connectStartRef = useRef(null);
@@ -92,10 +96,10 @@ function OrthogonalFlowInner({
     }, [clearHoverTimeout]);
 
     const onNodeMouseEnter = useCallback((_, node) => {
-        // Suppress phantom appearance while dragging a connection
+        // Suppress action node appearance while dragging a connection
         if (connectStartRef.current) return;
-        // If hovering a phantom, treat as hovering its parent
-        const id = node.id.startsWith('__phantom-') ? node.id.replace('__phantom-', '') : node.id;
+        // If hovering an action node, treat as hovering its parent
+        const id = node.id.startsWith('__action-') ? node.id.replace('__action-', '') : node.id;
         setHoveredImmediate(id);
     }, [setHoveredImmediate]);
 
@@ -103,7 +107,7 @@ function OrthogonalFlowInner({
         setHoveredDelayed();
     }, [setHoveredDelayed]);
 
-    // Callbacks passed to phantom nodes for hover propagation
+    // Callbacks passed to action nodes for hover propagation
     const onHoverParent = useCallback((parentId) => {
         setHoveredImmediate(parentId);
     }, [setHoveredImmediate]);
@@ -222,9 +226,9 @@ function OrthogonalFlowInner({
             },
         }));
 
-        // --- Compute phantom nodes & edges ---
-        const phantomNodes = [];
-        const phantomEdges = [];
+        // --- Compute action nodes & edges ---
+        const actionNodes = [];
+        const actionEdges = [];
 
         for (const n of finalNodes) {
             const isActive = n.id === hoveredNodeId || n.selected;
@@ -234,16 +238,16 @@ function OrthogonalFlowInner({
             const isConnected = (outputCounts.get(n.id) || 0) > 0;
             const pw = n.data?.width || cfg.nodeWidth;
             const ph = n.data?.height || cfg.nodeHeight;
-            const vOffset = cfg.addButtonVerticalOffset || 20;
-            const hOffset = isConnected ? (cfg.addButtonRightOffset ?? pw / 2) : 0;
-            const size = cfg.addButtonSize || 30;
+            const vOffset = cfg.addButtonVerticalOffset || 16;
+            const hOffset = isConnected ? (cfg.addButtonRightOffset ?? (pw / 2 + 8)) : 0;
+            const size = cfg.addButtonSize || 24;
 
             const parentX = n.positionAbsolute?.x ?? n.position.x;
             const parentY = n.positionAbsolute?.y ?? n.position.y;
 
-            phantomNodes.push({
-                id: `__phantom-${n.id}`,
-                type: '__phantom',
+            actionNodes.push({
+                id: `__action-${n.id}`,
+                type: '__action',
                 position: {
                     x: parentX + pw / 2 + hOffset - size / 2,
                     y: parentY + ph + vOffset,
@@ -261,12 +265,12 @@ function OrthogonalFlowInner({
                 focusable: false,
             });
 
-            phantomEdges.push({
-                id: `__phantom-edge-${n.id}`,
+            actionEdges.push({
+                id: `__action-edge-${n.id}`,
                 source: n.id,
-                sourceHandle: '__phantom-output',
-                target: `__phantom-${n.id}`,
-                targetHandle: '__phantom-input',
+                sourceHandle: '__action-output',
+                target: `__action-${n.id}`,
+                targetHandle: '__action-input',
                 type: 'default',
                 pathOptions: { curvature: 1.0 },
                 style: {
@@ -280,27 +284,27 @@ function OrthogonalFlowInner({
         }
 
         return {
-            visibleNodes: finalNodes.concat(phantomNodes),
-            visibleEdges: edgesWithCallbacks.concat(phantomEdges),
+            visibleNodes: finalNodes.concat(actionNodes),
+            visibleEdges: edgesWithCallbacks.concat(actionEdges),
         };
     }, [nodes, edges, onToggleCollapse, handleDeleteEdge, hoveredNodeId, config, onHoverParent, onUnhoverParent]);
 
     // --- ReactFlow event handlers ---
     const onNodesChange = useCallback((changes) => {
-        const realChanges = changes.filter((c) => !c.id?.startsWith('__phantom'));
+        if (!appOnNodesChangeRef.current) return;
+        const realChanges = changes.filter((c) => !c.id?.startsWith('__action'));
         if (realChanges.length === 0) return;
-        const nextNodes = applyNodeChanges(realChanges, nodesRef.current);
-        fireChange(nextNodes, edgesRef.current);
-    }, [fireChange]);
+        appOnNodesChangeRef.current(realChanges);
+    }, []);
 
     const onEdgesChange = useCallback((changes) => {
-        const realChanges = changes.filter((c) => !c.id?.startsWith('__phantom'));
+        if (!appOnEdgesChangeRef.current) return;
+        const realChanges = changes.filter((c) => !c.id?.startsWith('__action'));
         if (realChanges.length === 0) return;
-        const nextEdges = applyEdgeChanges(realChanges, edgesRef.current);
-        fireChange(nodesRef.current, nextEdges);
-    }, [fireChange]);
+        appOnEdgesChangeRef.current(realChanges);
+    }, []);
 
-    // --- Connection via drag from phantom (or any handle) ---
+    // --- Connection via drag from action node (or any handle) ---
     const onConnectStart = useCallback((_, params) => {
         connectStartRef.current = params;
     }, []);
@@ -316,12 +320,12 @@ function OrthogonalFlowInner({
         if (!nodeEl) return;
 
         const targetId = nodeEl.getAttribute('data-id');
-        if (!targetId || targetId.startsWith('__phantom')) return;
+        if (!targetId || targetId.startsWith('__action')) return;
 
-        // Resolve source — remap phantom to parent
+        // Resolve source — remap action node to parent
         let sourceId = startParams.nodeId;
-        if (sourceId.startsWith('__phantom-')) {
-            sourceId = sourceId.replace('__phantom-', '');
+        if (sourceId.startsWith('__action-')) {
+            sourceId = sourceId.replace('__action-', '');
         }
 
         // Ignore self-connections
@@ -355,9 +359,9 @@ function OrthogonalFlowInner({
         let source = params.source;
         let sourceHandle = params.sourceHandle;
 
-        // Remap phantom source to parent node
-        if (source.startsWith('__phantom-')) {
-            source = source.replace('__phantom-', '');
+        // Remap action node source to parent node
+        if (source.startsWith('__action-')) {
+            source = source.replace('__action-', '');
             sourceHandle = undefined;
         }
 
@@ -415,17 +419,19 @@ function OrthogonalFlowInner({
  * OrthogonalFlow — wrapper component that encapsulates all graph management logic.
  *
  * Props:
- *   nodes/edges        - controlled state from app
- *   onChange            - ({ nodes, edges }) => void
- *   onCreateNode        - factory for new nodes
- *   onCreateNodeInline  - factory for inline node insertion
- *   onConnectNodes      - factory for connecting existing nodes
- *   renderNodeMenu      - (nodeId) => ReactElement — app provides menu content
- *   renderEdgeMenu      - (edgeId, sourceId, targetId) => ReactElement
- *   api                 - object from useOrthogonalFlow()
- *   config              - layout/routing config overrides
- *   nodeTypes/edgeTypes - additional types (merged with built-ins)
- *   children            - rendered inside ReactFlow (Controls, Background, etc.)
+ *   nodes/edges          - controlled state from app
+ *   onChange              - ({ nodes, edges }) => void
+ *   onNodesChange        - (changes) => void — app handles applyNodeChanges
+ *   onEdgesChange        - (changes) => void — app handles applyEdgeChanges
+ *   onCreateNode         - factory for new nodes
+ *   onCreateNodeInline   - factory for inline node insertion
+ *   onConnectNodes       - factory for connecting existing nodes
+ *   renderNodeMenu       - (nodeId) => ReactElement — app provides menu content
+ *   renderEdgeMenu       - (edgeId, sourceId, targetId) => ReactElement
+ *   api                  - object from useOrthogonalFlow()
+ *   config               - layout/routing config overrides
+ *   nodeTypes/edgeTypes  - additional types (merged with built-ins)
+ *   children             - rendered inside ReactFlow (Controls, Background, etc.)
  */
 export default function OrthogonalFlow(props) {
     return (

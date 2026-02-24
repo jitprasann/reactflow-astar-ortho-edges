@@ -1,9 +1,9 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
-import './phantomNode.css';
+import './nodeShell.css';
 
 /**
- * PhantomNode — ghost "+" node that appears below a hovered/selected node.
+ * ActionNode — ghost "+" node that appears below a hovered/selected node.
  *
  * Rendered as a dashed-border circle with a "+" inside.
  * - Click: opens dropdown menu (app's renderNodeMenu)
@@ -17,8 +17,8 @@ import './phantomNode.css';
  *   onHoverParent  - (parentId) => void
  *   onUnhoverParent - () => void
  */
-const PhantomNode = memo(function PhantomNode({ data }) {
-  const { parentId, size = 30, renderMenu, onHoverParent, onUnhoverParent } = data;
+const ActionNode = memo(function ActionNode({ data }) {
+  const { parentId, size = 24, renderMenu, onHoverParent, onUnhoverParent } = data;
   const [menuOpen, setMenuOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -54,7 +54,7 @@ const PhantomNode = memo(function PhantomNode({ data }) {
   return (
     <div
       ref={wrapperRef}
-      className="eq-pipeline-canvas-phantom-node"
+      className="eq-pipeline-compact-action-node"
       style={sizeStyle}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
@@ -62,12 +62,12 @@ const PhantomNode = memo(function PhantomNode({ data }) {
     >
       +
 
-      {/* Hidden input handle at top center — phantom edge connects here */}
+      {/* Hidden input handle at top center — action edge connects here */}
       <Handle
         type="target"
         position={Position.Top}
-        id="__phantom-input"
-        className="eq-pipeline-canvas-phantom-input-handle"
+        id="__action-input"
+        className="eq-pipeline-compact-action-input-handle"
       />
 
       {/* Source handle covering full node area — drag from here to create edge */}
@@ -75,13 +75,13 @@ const PhantomNode = memo(function PhantomNode({ data }) {
         type="source"
         position={Position.Bottom}
         id="output-0"
-        className="eq-pipeline-canvas-phantom-handle"
+        className="eq-pipeline-compact-action-handle"
       />
 
       {/* Dropdown menu */}
       {menuOpen && menuContent && (
         <div
-          className="eq-pipeline-canvas-phantom-menu"
+          className="eq-pipeline-compact-action-menu"
           onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
         >
           {menuContent}
@@ -91,4 +91,4 @@ const PhantomNode = memo(function PhantomNode({ data }) {
   );
 });
 
-export default PhantomNode;
+export default ActionNode;

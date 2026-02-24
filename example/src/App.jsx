@@ -5,6 +5,8 @@ import {
     Controls,
     Background,
     layoutGraphDagre,
+    applyNodeChanges,
+    applyEdgeChanges,
 } from "../../lib/index.js";
 import "reactflow/dist/style.css";
 
@@ -98,14 +100,20 @@ export default function App() {
         setEdges(e);
     }, []);
 
+    const handleNodesChange = useCallback((changes) => {
+        setNodes((nds) => applyNodeChanges(changes, nds));
+    }, []);
+
+    const handleEdgesChange = useCallback((changes) => {
+        setEdges((eds) => applyEdgeChanges(changes, eds));
+    }, []);
+
     // Factory: app decides IDs, labels, structure for new nodes
     const handleCreateNode = useCallback((parentId, type, context) => {
         if (type === "node") {
             const nodeId = nextId("node");
             const newEdges = [{ id: nextId("e"), source: parentId, target: nodeId }];
-            if (context.mergeNodeId) {
-                newEdges.push({ id: nextId("e"), source: nodeId, target: context.mergeNodeId });
-            }
+            
             return {
                 nodes: [{ id: nodeId, type: "square", data: { label: nextNodeLabel(), width: 80, height: 80 } }],
                 edges: newEdges,
@@ -226,6 +234,8 @@ export default function App() {
                 nodes={nodes}
                 edges={edges}
                 onChange={handleChange}
+                onNodesChange={handleNodesChange}
+                onEdgesChange={handleEdgesChange}
                 onCreateNode={handleCreateNode}
                 onCreateNodeInline={handleCreateNodeInline}
                 onConnectNodes={handleConnectNodes}
