@@ -36,3 +36,60 @@
   stroke: #1976d2 !important;
   stroke-width: 2.5 !important;
 }
+
+/* --- Node styles --- */
+.node-box {
+  border-radius: 6px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+}
+
+.node-box.selected {
+  background: #e3f2fd;
+  border: 2px solid #1976d2;
+}
+
+.node-box .node-icon {
+  font-size: 28px;
+  color: #666;
+  line-height: 1;
+  user-select: none;
+}
+
+.node-box.branch-node {
+  background: #edf7ee;
+  border-color: #4caf50;
+}
+
+.node-box.branch-node.selected {
+  background: #e3f2fd;
+  border-color: #1976d2;
+}
+
+.node-box .collapse-btn {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid #999;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #333;
+}
+
+.merge-node {
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 2px solid #888;
+}
+
+.merge-node.selected {
+  background: #e3f2fd;
+  border-color: #1976d2;
+}

@@ -32,13 +32,13 @@ function nextNodeLabel() {
 // --- Initial graph data ---
 // No explicit handles — the library assigns them on first render.
 const rawNodes = [
-    { id: "start",       type: "square", position: { x: 0, y: 0 }, data: { label: "Start",        width: 150, height: 60 } },
-    { id: "branch1",     type: "branch", position: { x: 0, y: 0 }, data: { label: "Branch",       width: 150, height: 60 } },
-    { id: "if-node",     type: "square", position: { x: 0, y: 0 }, data: { label: "If Path",      width: 120, height: 50 } },
-    { id: "elseif-node", type: "square", position: { x: 0, y: 0 }, data: { label: "Else-If Path", width: 120, height: 50 } },
-    { id: "else-node",   type: "square", position: { x: 0, y: 0 }, data: { label: "Else Path",    width: 120, height: 50 } },
+    { id: "start",       type: "square", position: { x: 0, y: 0 }, data: { label: "Start",        width: 80, height: 80 } },
+    { id: "branch1",     type: "branch", position: { x: 0, y: 0 }, data: { label: "Branch",       isBranch: true, width: 80, height: 80 } },
+    { id: "if-node",     type: "square", position: { x: 0, y: 0 }, data: { label: "If Path",      width: 80, height: 80 } },
+    { id: "elseif-node", type: "square", position: { x: 0, y: 0 }, data: { label: "Else-If Path", width: 80, height: 80 } },
+    { id: "else-node",   type: "square", position: { x: 0, y: 0 }, data: { label: "Else Path",    width: 80, height: 80 } },
     { id: "merge1",      type: "merge",  position: { x: 0, y: 0 }, data: { label: "", isMerge: true, width: 40, height: 40 } },
-    { id: "end",         type: "square", position: { x: 0, y: 0 }, data: { label: "End",          width: 150, height: 60 } },
+    { id: "end",         type: "square", position: { x: 0, y: 0 }, data: { label: "End",          width: 80, height: 80 } },
 ];
 
 const rawEdges = [
@@ -107,7 +107,7 @@ export default function App() {
                 newEdges.push({ id: nextId("e"), source: nodeId, target: context.mergeNodeId });
             }
             return {
-                nodes: [{ id: nodeId, type: "square", data: { label: nextNodeLabel(), width: 150, height: 60 } }],
+                nodes: [{ id: nodeId, type: "square", data: { label: nextNodeLabel(), width: 80, height: 80 } }],
                 edges: newEdges,
             };
         }
@@ -118,9 +118,9 @@ export default function App() {
             const mId = nextId("merge");
             return {
                 nodes: [
-                    { id: bId,     type: "branch", data: { label: "Branch", width: 150, height: 60 } },
-                    { id: ifId,    type: "square", data: { label: "If",     width: 120, height: 50 } },
-                    { id: elseId,  type: "square", data: { label: "Else",   width: 120, height: 50 } },
+                    { id: bId,     type: "branch", data: { label: "Branch", isBranch: true, width: 80, height: 80 } },
+                    { id: ifId,    type: "square", data: { label: "If",     width: 80, height: 80 } },
+                    { id: elseId,  type: "square", data: { label: "Else",   width: 80, height: 80 } },
                     { id: mId,     type: "merge",  data: { label: "", isMerge: true, width: 40, height: 40 } },
                 ],
                 edges: [
@@ -139,7 +139,7 @@ export default function App() {
         if (type === "node") {
             const nodeId = nextId("node");
             return {
-                nodes: [{ id: nodeId, type: "square", data: { label: nextNodeLabel(), width: 150, height: 60 } }],
+                nodes: [{ id: nodeId, type: "square", data: { label: nextNodeLabel(), width: 80, height: 80 } }],
                 edges: [
                     { id: nextId("e"), source: sourceId, target: nodeId },
                     { id: nextId("e"), source: nodeId,   target: targetId },
@@ -153,9 +153,9 @@ export default function App() {
             const mId = nextId("merge");
             return {
                 nodes: [
-                    { id: bId,     type: "branch", data: { label: "Branch", width: 150, height: 60 } },
-                    { id: ifId,    type: "square", data: { label: "If",     width: 120, height: 50 } },
-                    { id: elseId,  type: "square", data: { label: "Else",   width: 120, height: 50 } },
+                    { id: bId,     type: "branch", data: { label: "Branch", isBranch: true, width: 80, height: 80 } },
+                    { id: ifId,    type: "square", data: { label: "If",     width: 80, height: 80 } },
+                    { id: elseId,  type: "square", data: { label: "Else",   width: 80, height: 80 } },
                     { id: mId,     type: "merge",  data: { label: "", isMerge: true, width: 40, height: 40 } },
                 ],
                 edges: [

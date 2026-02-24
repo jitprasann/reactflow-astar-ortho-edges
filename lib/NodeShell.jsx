@@ -1,33 +1,30 @@
-import React, { memo, useCallback, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { DEFAULTS } from './defaults.js';
-import AddNodeMenu from './AddNodeMenu.jsx';
 
 /**
- * NodeShell — universal wrapper for orthogonal-flow nodes.
+ * NodeShell — generic wrapper for orthogonal-flow nodes.
  *
- * Handles all boilerplate: input/output handles, handle-count updates,
- * AddNodeMenu, collapse button (branch), and renders the label above the node.
+ * Provides: dynamic input/output handles, handle-count updates,
+ * hidden phantom-output handle, and an optional label above the box.
+ *
+ * All styling and domain-specific behavior (collapse buttons, variant
+ * colors, special handle shapes) belong in the app's node components.
  *
  * Props:
- *   id       - node ID (from ReactFlow)
- *   data     - node data object (from ReactFlow)
- *   selected - boolean (from ReactFlow)
- *   children - optional content rendered inside the node box
- *   variant  - 'square' | 'branch' | 'merge' (controls default styling)
- *   style    - optional style overrides for the box
+ *   id        - node ID (from ReactFlow)
+ *   data      - node data object (from ReactFlow)
+ *   selected  - boolean (from ReactFlow)
+ *   children  - content rendered inside the node box
+ *   className - CSS class(es) for the outer box
+ *   style     - inline style overrides for the outer box
  */
-const NodeShell = memo(function NodeShell({ id, data, selected, children, variant = 'square', style: styleProp }) {
-  const isMerge = variant === 'merge';
-  const isBranch = variant === 'branch';
+const NodeShell = memo(function NodeShell({ id, data, selected, children, className, style }) {
+  const width = data.width || DEFAULTS.nodeWidth;
+  const height = data.height || DEFAULTS.nodeHeight;
 
-  // --- Dimensions ---
-  const width = isMerge ? (data.width || 40) : (data.width || DEFAULTS.nodeWidth);
-  const height = isMerge ? (data.width || 40) : (data.height || DEFAULTS.nodeHeight);
-
-  // --- Handles ---
-  const inputs = isMerge ? 1 : (data.inputs || 0);
-  const outputs = isMerge ? 1 : (data.outputs || 0);
+  const inputs = data.inputs || 0;
+  const outputs = data.outputs || 0;
 
   const updateNodeInternals = useUpdateNodeInternals();
   const prevHandles = useRef(`${inputs}-${outputs}`);
@@ -39,142 +36,23 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, varian
     }
   }, [inputs, outputs, id, updateNodeInternals]);
 
-  // --- Collapse (branch only) ---
-  const collapsed = !!data.collapsed;
-  const onToggleCollapse = data.onToggleCollapse;
-  const handleToggle = useCallback(
-    (e) => {
-      e.stopPropagation();
-      if (onToggleCollapse) onToggleCollapse(id, !collapsed);
-    },
-    [id, collapsed, onToggleCollapse]
-  );
+  const label = data.label || '';
 
-  // --- Box styling per variant ---
-  const baseBox = {
+  const baseStyle = {
     width,
     height,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: isMerge ? 11 : 13,
+    fontSize: 13,
     fontFamily: 'sans-serif',
     position: 'relative',
     boxSizing: 'border-box',
+    ...style,
   };
 
-  let variantBox;
-  if (isMerge) {
-    variantBox = {
-      borderRadius: '50%',
-      background: selected ? '#e3f2fd' : '#fff',
-      border: selected ? '2px solid #1976d2' : '2px solid #666',
-    };
-  } else if (isBranch) {
-    variantBox = {
-      borderRadius: 4,
-      background: selected ? '#e3f2fd' : '#e8f5e9',
-      border: selected ? '2px solid #1976d2' : '1px solid #4caf50',
-    };
-  } else {
-    // square (default)
-    variantBox = {
-      borderRadius: 4,
-      background: selected ? '#e3f2fd' : '#fff',
-      border: selected ? '2px solid #1976d2' : '1px solid #999',
-    };
-  }
-
-  const boxStyle = { ...baseBox, ...variantBox, ...styleProp };
-
-  // --- Render handles ---
-  let handles;
-  if (isMerge) {
-    const size = width;
-    handles = (
-      <>
-        <Handle
-          type="target"
-          position={Position.Top}
-          id="input-0"
-          style={{
-            width: size,
-            height: size,
-            top: 0,
-            left: 0,
-            borderRadius: '50%',
-            transform: 'none',
-            opacity: 0,
-            background: 'transparent',
-            border: 'none',
-          }}
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="output-0"
-          style={{
-            background: '#666',
-            width: 6,
-            height: 6,
-          }}
-        />
-      </>
-    );
-  } else {
-    handles = (
-      <>
-        {Array.from({ length: inputs }, (_, i) => {
-          const offset = (i - (inputs - 1) / 2) * 8;
-          return (
-            <Handle
-              key={`input-${i}`}
-              type="target"
-              position={Position.Top}
-              id={`input-${i}`}
-              style={{
-                left: `calc(50% + ${offset}px)`,
-                transform: 'translateX(-50%)',
-                background: 'transparent',
-                width: 1,
-                height: 1,
-                border: 'none',
-                opacity: 0,
-                pointerEvents: 'none',
-              }}
-            />
-          );
-        })}
-        {Array.from({ length: outputs }, (_, i) => {
-          const offset = (i - (outputs - 1) / 2) * 8;
-          return (
-            <Handle
-              key={`output-${i}`}
-              type="source"
-              position={Position.Bottom}
-              id={`output-${i}`}
-              style={{
-                left: `calc(50% + ${offset}px)`,
-                transform: 'translateX(-50%)',
-                background: 'transparent',
-                width: 1,
-                height: 1,
-                border: 'none',
-                opacity: 0,
-                pointerEvents: 'none',
-              }}
-            />
-          );
-        })}
-      </>
-    );
-  }
-
-  // --- Label ---
-  const label = data.label || '';
-
   return (
-    <div style={boxStyle}>
+    <div className={className} style={baseStyle}>
       {/* Label — absolutely positioned above the box */}
       {label && (
         <div style={{
@@ -201,42 +79,67 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, varian
         </div>
       )}
 
-      {/* Custom content inside the box */}
       {children}
 
-      {/* Handles */}
-      {handles}
+      {/* Dynamic input handles */}
+      {Array.from({ length: inputs }, (_, i) => {
+        const offset = (i - (inputs - 1) / 2) * 8;
+        return (
+          <Handle
+            key={`input-${i}`}
+            type="target"
+            position={Position.Top}
+            id={`input-${i}`}
+            style={{
+              left: `calc(50% + ${offset}px)`,
+              transform: 'translateX(-50%)',
+              background: 'transparent',
+              width: 1,
+              height: 1,
+              border: 'none',
+              opacity: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        );
+      })}
 
-      {/* Collapse button — branch variant only */}
-      {isBranch && (
-        <button
-          onClick={handleToggle}
-          style={{
-            position: 'absolute',
-            bottom: 2,
-            right: 2,
-            width: 18,
-            height: 18,
-            padding: 0,
-            border: '1px solid #999',
-            borderRadius: 3,
-            background: '#fff',
-            cursor: 'pointer',
-            fontSize: 12,
-            lineHeight: '16px',
-            textAlign: 'center',
-            color: '#333',
-          }}
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          {collapsed ? '+' : '\u2212'}
-        </button>
-      )}
+      {/* Dynamic output handles */}
+      {Array.from({ length: outputs }, (_, i) => {
+        const offset = (i - (outputs - 1) / 2) * 8;
+        return (
+          <Handle
+            key={`output-${i}`}
+            type="source"
+            position={Position.Bottom}
+            id={`output-${i}`}
+            style={{
+              left: `calc(50% + ${offset}px)`,
+              transform: 'translateX(-50%)',
+              background: 'transparent',
+              width: 1,
+              height: 1,
+              border: 'none',
+              opacity: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        );
+      })}
 
-      {/* AddNodeMenu */}
-      {data.renderMenu && (
-        <AddNodeMenu renderMenu={data.renderMenu} />
-      )}
+      {/* Hidden handle for phantom edge connection */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="__phantom-output"
+        style={{
+          opacity: 0,
+          width: 1,
+          height: 1,
+          border: 'none',
+          pointerEvents: 'none',
+        }}
+      />
     </div>
   );
 });

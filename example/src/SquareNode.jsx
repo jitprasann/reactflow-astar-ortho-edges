@@ -3,8 +3,8 @@ import { NodeShell } from '../../lib/index.js';
 
 const SquareNode = memo(function SquareNode({ id, data, selected }) {
   return (
-    <NodeShell id={id} data={data} selected={selected} variant="square">
-      <span style={{ fontSize: 20 }}>&#9634;</span>
+    <NodeShell id={id} data={data} selected={selected} className={`node-box${selected ? ' selected' : ''}`}>
+      <span className="node-icon">&#9634;</span>
     </NodeShell>
   );
 });

@@ -1,0 +1,35 @@
+/* --- Node state styles --- */
+
+.eq-pipeline-canvas-node {
+  border-radius: 6px;
+  background: #f5f5f5;
+  border: 1.5px solid #ccc;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+/* Normal — default idle state */
+.eq-pipeline-canvas-node--normal {
+  border-color: #ccc;
+  background: #f5f5f5;
+}
+
+/* Focus — hovered / keyboard focused */
+.eq-pipeline-canvas-node--focus {
+  border-color: #888;
+  background: #ebebeb;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Highlighted — programmatically marked (e.g. search result, related node) */
+.eq-pipeline-canvas-node--highlighted {
+  border-color: #f59e0b;
+  background: #fef9c3;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+/* Selected — clicked / selected in canvas */
+.eq-pipeline-canvas-node--selected {
+  border-color: #1976d2;
+  background: #e3f2fd;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.25);
+}

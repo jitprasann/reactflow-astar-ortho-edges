@@ -159,10 +159,11 @@ export default function EdgeRoutingProvider({ children, config }) {
                 );
             }
 
-            // Build obstacle list excluding source and target nodes
+            // Build obstacle list excluding source, target, and phantom nodes
             const obstacles = [];
             for (const [id, n] of nodeInternals) {
                 if (id === edge.source || id === edge.target) continue;
+                if (id.startsWith('__phantom')) continue;
                 obstacles.push({
                     id,
                     x: n.positionAbsolute?.x ?? n.position.x,
