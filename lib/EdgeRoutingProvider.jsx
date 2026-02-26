@@ -178,10 +178,10 @@ export default function EdgeRoutingProvider({ children, config }) {
                 ...(edge.data?.routingConfig || {}),
                 sourceDir: srcInfo.dir,
                 targetDir: tgtInfo.dir,
-                // Apply early-bend bias only for edges that carry a label so
-                // the horizontal segment (where the label sits) appears close
-                // to the source. Unlabelled edges keep the late-bend default.
-                earlyBendBias: edge.data?.label ? cfg.earlyBendBias : 0,
+                // Apply early-bend bias to all edges except those connecting
+                // to a merge node. Merge-targeting edges use late-bend
+                // (straight down then turn) for cleaner converging paths.
+                earlyBendBias: targetNode.data?.isMerge ? 0 : cfg.earlyBendBias,
             };
             const { points } = computeOrthogonalPath(
                 srcInfo.x,
