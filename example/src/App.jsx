@@ -7,6 +7,8 @@ import {
     layoutGraphDagre,
     applyNodeChanges,
     applyEdgeChanges,
+    cascadeDeleteNode,
+    cascadeDeleteEdge,
 } from "../../lib/index.js";
 import "reactflow/dist/style.css";
 
@@ -108,6 +110,26 @@ export default function App() {
         setEdges((eds) => applyEdgeChanges(changes, eds));
     }, []);
 
+    // Cascade deletion callbacks
+    const handleDeleteNode = useCallback((nodeId, node, { nodes: ns, edges: es }) => {
+        return cascadeDeleteNode(ns, es, nodeId, {
+            createEdge: (source, target) => ({
+                id: nextId("e"), source, target,
+                type: "orthogonal", markerEnd: { type: "arrowclosed" },
+            }),
+        });
+    }, []);
+
+    const handleDeleteEdge = useCallback((edgeId, edge, { nodes: ns, edges: es }) => {
+        return cascadeDeleteEdge(ns, es, edgeId, {
+            createEdge: (source, target) => ({
+                id: nextId("e"), source, target,
+                type: "orthogonal", markerEnd: { type: "arrowclosed" },
+            }),
+            isBranchEdge: (e) => e.data && e.data.label,
+        });
+    }, []);
+
     // Factory: app decides IDs, labels, structure for new nodes
     const handleCreateNode = useCallback((parentId, type, context) => {
         if (type === "node") {
@@ -187,7 +209,7 @@ export default function App() {
     const renderNodeMenu = useCallback(
         (nodeId) => {
             const node = flowApi.getNodes?.()?.find((n) => n.id === nodeId);
-            if (node?.data?.isMerge) return null;
+            if (node?.data?.isMerge || node?.id === "start" || node?.id === "end") return null;
             return (
                 <div>
                     <div style={sectionHeaderStyle}>Add new</div>
@@ -239,6 +261,8 @@ export default function App() {
                 onCreateNode={handleCreateNode}
                 onCreateNodeInline={handleCreateNodeInline}
                 onConnectNodes={handleConnectNodes}
+                onDeleteNode={handleDeleteNode}
+                onDeleteEdge={handleDeleteEdge}
                 renderNodeMenu={renderNodeMenu}
                 renderEdgeMenu={renderEdgeMenu}
                 nodeTypes={nodeTypes}

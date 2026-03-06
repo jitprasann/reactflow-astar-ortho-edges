@@ -17,6 +17,7 @@ import {
     addNode,
     addNodeInline,
     connectNodes,
+    deleteNode,
     deleteEdge,
     layoutAll,
 } from "./graphActions.js";
@@ -36,6 +37,8 @@ function OrthogonalFlowInner({
     onCreateNode,
     onCreateNodeInline,
     onConnectNodes,
+    onDeleteNode: onDeleteNodeProp,
+    onDeleteEdge: onDeleteEdgeProp,
     renderNodeMenu,
     renderEdgeMenu,
     api,
@@ -60,6 +63,10 @@ function OrthogonalFlowInner({
     onCreateNodeInlineRef.current = onCreateNodeInline;
     const onConnectNodesRef = useRef(onConnectNodes);
     onConnectNodesRef.current = onConnectNodes;
+    const onDeleteNodeRef = useRef(onDeleteNodeProp);
+    onDeleteNodeRef.current = onDeleteNodeProp;
+    const onDeleteEdgeRef = useRef(onDeleteEdgeProp);
+    onDeleteEdgeRef.current = onDeleteEdgeProp;
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
     const renderNodeMenuRef = useRef(renderNodeMenu);
@@ -154,8 +161,27 @@ function OrthogonalFlowInner({
     }, [fireChange]);
 
     const handleDeleteEdge = useCallback((edgeId) => {
-        const result = deleteEdge(nodesRef.current, edgesRef.current, edgeId);
-        if (result) fireChange(result.nodes, result.edges);
+        const onDeleteEdgeFn = onDeleteEdgeRef.current;
+        if (onDeleteEdgeFn) {
+            const edge = edgesRef.current.find((e) => e.id === edgeId);
+            const result = onDeleteEdgeFn(edgeId, edge, { nodes: nodesRef.current, edges: edgesRef.current });
+            if (result) fireChange(result.nodes, result.edges);
+        } else {
+            const result = deleteEdge(nodesRef.current, edgesRef.current, edgeId);
+            if (result) fireChange(result.nodes, result.edges);
+        }
+    }, [fireChange]);
+
+    const handleDeleteNode = useCallback((nodeId) => {
+        const onDeleteNodeFn = onDeleteNodeRef.current;
+        if (onDeleteNodeFn) {
+            const node = nodesRef.current.find((n) => n.id === nodeId);
+            const result = onDeleteNodeFn(nodeId, node, { nodes: nodesRef.current, edges: edgesRef.current });
+            if (result) fireChange(result.nodes, result.edges);
+        } else {
+            const result = deleteNode(nodesRef.current, edgesRef.current, nodeId);
+            if (result) fireChange(result.nodes, result.edges);
+        }
     }, [fireChange]);
 
     const handleLayout = useCallback(() => {
@@ -170,11 +196,12 @@ function OrthogonalFlowInner({
         api.addNodeInline = (edgeId, type) => handleAddNodeInline(edgeId, type);
         api.connectNodes = (sourceId, targetId) => handleConnectToExisting(sourceId, targetId);
         api.deleteEdge = (edgeId) => handleDeleteEdge(edgeId);
+        api.deleteNode = (nodeId) => handleDeleteNode(nodeId);
         api.layout = () => handleLayout();
-        api.fitView = () => reactFlowInstance?.fitView();
+        api.fitView = () => reactFlowInstance && reactFlowInstance.fitView();
         api.getNodes = () => nodesRef.current;
         api.getEdges = () => edgesRef.current;
-    }, [api, handleAddNode, handleAddNodeInline, handleConnectToExisting, handleDeleteEdge, handleLayout, reactFlowInstance]);
+    }, [api, handleAddNode, handleAddNodeInline, handleConnectToExisting, handleDeleteEdge, handleDeleteNode, handleLayout, reactFlowInstance]);
 
     // --- Visible graph computation ---
     const { visibleNodes, visibleEdges } = useMemo(() => {
@@ -184,6 +211,7 @@ function OrthogonalFlowInner({
         const withCallbacks = nodes.map((n) => {
             const extra = {};
             extra.onToggleCollapse = onToggleCollapse;
+            extra.onDeleteNode = handleDeleteNode;
             // Inject renderMenu so nodes can show app-provided menus
             if (renderNodeMenuRef.current) {
                 extra.renderMenu = () => renderNodeMenuRef.current(n.id);
@@ -233,7 +261,9 @@ function OrthogonalFlowInner({
         for (const n of finalNodes) {
             const isActive = n.id === hoveredNodeId || n.selected;
             if (!isActive || !renderNodeMenuRef.current) continue;
-            if (n.data?.isMerge) continue;
+
+            const menuContent = renderNodeMenuRef.current(n.id);
+            if (!menuContent) continue;
 
             const isConnected = (outputCounts.get(n.id) || 0) > 0;
             const pw = n.data?.width || cfg.nodeWidth;
@@ -255,7 +285,7 @@ function OrthogonalFlowInner({
                 data: {
                     parentId: n.id,
                     size,
-                    renderMenu: () => renderNodeMenuRef.current(n.id),
+                    renderMenu: () => menuContent,
                     onHoverParent,
                     onUnhoverParent,
                 },
@@ -287,15 +317,26 @@ function OrthogonalFlowInner({
             visibleNodes: finalNodes.concat(actionNodes),
             visibleEdges: edgesWithCallbacks.concat(actionEdges),
         };
-    }, [nodes, edges, onToggleCollapse, handleDeleteEdge, hoveredNodeId, config, onHoverParent, onUnhoverParent]);
+    }, [nodes, edges, onToggleCollapse, handleDeleteEdge, handleDeleteNode, hoveredNodeId, config, onHoverParent, onUnhoverParent]);
 
     // --- ReactFlow event handlers ---
     const onNodesChange = useCallback((changes) => {
         if (!appOnNodesChangeRef.current) return;
-        const realChanges = changes.filter((c) => !c.id?.startsWith('__action'));
+        const realChanges = changes.filter((c) => !(c.id && c.id.startsWith('__action')));
         if (realChanges.length === 0) return;
-        appOnNodesChangeRef.current(realChanges);
-    }, []);
+
+        // Intercept remove changes to use handleDeleteNode
+        const removeChanges = realChanges.filter((c) => c.type === 'remove');
+        const otherChanges = realChanges.filter((c) => c.type !== 'remove');
+
+        for (const rc of removeChanges) {
+            handleDeleteNode(rc.id);
+        }
+
+        if (otherChanges.length > 0) {
+            appOnNodesChangeRef.current(otherChanges);
+        }
+    }, [handleDeleteNode]);
 
     const onEdgesChange = useCallback((changes) => {
         if (!appOnEdgesChangeRef.current) return;
@@ -426,6 +467,8 @@ function OrthogonalFlowInner({
  *   onCreateNode         - factory for new nodes
  *   onCreateNodeInline   - factory for inline node insertion
  *   onConnectNodes       - factory for connecting existing nodes
+ *   onDeleteNode         - (nodeId, node, { nodes, edges }) => { nodes, edges } — custom node deletion
+ *   onDeleteEdge         - (edgeId, edge, { nodes, edges }) => { nodes, edges } — custom edge deletion
  *   renderNodeMenu       - (nodeId) => ReactElement — app provides menu content
  *   renderEdgeMenu       - (edgeId, sourceId, targetId) => ReactElement
  *   api                  - object from useOrthogonalFlow()
