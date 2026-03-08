@@ -3,7 +3,7 @@ import { NodeShell } from '../../lib/index.js';
 
 const MergeNode = memo(function MergeNode({ id, data, selected }) {
   return (
-    <NodeShell id={id} data={data} selected={selected} className={`merge-node${selected ? ' selected' : ''}`}>
+    <NodeShell id={id} data={data} selected={selected} className="merge-node">
       <span className="node-icon">&#9679;</span>
     </NodeShell>
   );

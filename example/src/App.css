@@ -27,28 +27,12 @@
   background: #f0f0f0;
 }
 
-.react-flow__node.selected > div {
-  border-color: #1976d2 !important;
-  border-width: 2px !important;
-}
-
 .react-flow__edge.selected .react-flow__edge-path {
   stroke: #1976d2 !important;
   stroke-width: 2.5 !important;
 }
 
 /* --- Node styles --- */
-.node-box {
-  border-radius: 6px;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-}
-
-.node-box.selected {
-  background: #e3f2fd;
-  border: 2px solid #1976d2;
-}
-
 .node-box .node-icon {
   font-size: 28px;
   color: #666;
@@ -107,11 +91,4 @@
 
 .merge-node {
   border-radius: 50%;
-  background: #f0f0f0;
-  border: 2px solid #888;
-}
-
-.merge-node.selected {
-  background: #e3f2fd;
-  border-color: #1976d2;
 }

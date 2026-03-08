@@ -1,62 +1,64 @@
-/* --- Node state styles --- */
+/* --- Node wrapper (applied to every node by NodeShell) --- */
 
-.eq-pipeline-canvas-node {
+.eq-pipeline-compact-node-wrapper {
   border-radius: 6px;
   background: #f5f5f5;
   border: 1.5px solid #ccc;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
-/* Normal — default idle state */
-.eq-pipeline-canvas-node--normal {
-  border-color: #ccc;
-  background: #f5f5f5;
-}
-
-/* Focus — hovered / keyboard focused */
-.eq-pipeline-canvas-node--focus {
+/* Hover state */
+.eq-pipeline-compact-node-wrapper.hover {
   border-color: #888;
   background: #ebebeb;
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
 
-/* Highlighted — programmatically marked (e.g. search result, related node) */
-.eq-pipeline-canvas-node--highlighted {
-  border-color: #f59e0b;
-  background: #fef9c3;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
-}
-
-/* Selected — clicked / selected in canvas */
-.eq-pipeline-canvas-node--selected {
+/* Selected state */
+.eq-pipeline-compact-node-wrapper.selected {
   border-color: #1976d2;
   background: #e3f2fd;
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.25);
 }
 
+/* Highlighted state (programmatic, e.g. search result) */
+.eq-pipeline-compact-node-wrapper.highlighted {
+  border-color: #f59e0b;
+  background: #fef9c3;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+/* Focused state */
+.eq-pipeline-compact-node-wrapper.focused {
+  border-color: #888;
+  background: #ebebeb;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
 /* --- Node label --- */
 
-.eq-pipeline-canvas-node-label {
+.eq-pipeline-compact-node-wrapper .eq-pipeline-canvas-node-label {
   background: #fff;
 }
 
 /* --- Node handles (invisible connection points) --- */
+/* Use ReactFlow selector + our class for specificity (no !important) */
 
-.eq-pipeline-canvas-node-handle {
-  background: transparent !important;
-  border: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 1px !important;
-  height: 1px !important;
+.react-flow__handle.eq-pipeline-compact-node-handle {
+  background: transparent;
+  border: none;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
 }
 
-.eq-pipeline-canvas-action-output-handle {
-  opacity: 0 !important;
-  width: 1px !important;
-  height: 1px !important;
-  border: none !important;
-  pointer-events: none !important;
+.react-flow__handle.eq-pipeline-compact-node-action-output-handle {
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  border: none;
+  pointer-events: none;
 }
 
 /* --- ActionNode (compact) --- */
@@ -81,23 +83,23 @@
   border-color: #666;
 }
 
-.eq-pipeline-compact-action-handle {
-  width: 100% !important;
-  height: 100% !important;
-  top: 0 !important;
-  left: 0 !important;
-  border-radius: 4px !important;
-  transform: none !important;
-  opacity: 0 !important;
-  border: none !important;
+.react-flow__handle.eq-pipeline-compact-action-handle {
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  border-radius: 4px;
+  transform: none;
+  opacity: 0;
+  border: none;
 }
 
-.eq-pipeline-compact-action-input-handle {
-  opacity: 0 !important;
-  width: 1px !important;
-  height: 1px !important;
-  border: none !important;
-  pointer-events: none !important;
+.react-flow__handle.eq-pipeline-compact-action-input-handle {
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  border: none;
+  pointer-events: none;
 }
 
 .eq-pipeline-compact-action-menu {

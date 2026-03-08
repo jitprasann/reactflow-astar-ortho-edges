@@ -10,7 +10,7 @@ const SquareNode = memo(function SquareNode({ id, data, selected }) {
   }, [id, onDeleteNode]);
 
   return (
-    <NodeShell id={id} data={data} selected={selected} className={`node-box${selected ? ' selected' : ''}`}>
+    <NodeShell id={id} data={data} selected={selected} className="node-box">
       <span className="node-icon">&#9634;</span>
       {onDeleteNode && (
         <button className="delete-btn" onClick={handleDelete} title="Delete">

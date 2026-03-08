@@ -17,7 +17,7 @@ const BranchNode = memo(function BranchNode({ id, data, selected }) {
   }, [id, onDeleteNode]);
 
   return (
-    <NodeShell id={id} data={data} selected={selected} className={`node-box branch-node${selected ? ' selected' : ''}`}>
+    <NodeShell id={id} data={data} selected={selected} className="node-box branch-node">
       <span className="node-icon">&#9670;</span>
       <button className="collapse-btn" onClick={handleToggle} title={collapsed ? 'Expand' : 'Collapse'}>
         {collapsed ? '+' : '\u2212'}
