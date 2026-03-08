@@ -11,7 +11,7 @@ import OrthogonalEdge from "./OrthogonalEdge.jsx";
 import ActionNode from "./ActionNode.jsx";
 import EdgeRoutingProvider from "./EdgeRoutingProvider.jsx";
 import { getVisibleGraph } from "./layoutEngine.js";
-import { DEFAULTS } from "./defaults.js";
+import { DEFAULTS, resolveNodeX, resolveNodeY } from "./defaults.js";
 import {
     toggleCollapse,
     addNode,
@@ -24,6 +24,68 @@ import {
 
 const builtInEdgeTypes = { orthogonal: OrthogonalEdge };
 const builtInNodeTypes = { __action: ActionNode };
+
+function buildActionNodesAndEdges(finalNodes, outputCounts, hoveredNodeId, renderNodeMenuRef, cfg, onHoverParent, onUnhoverParent) {
+    const actionNodes = [];
+    const actionEdges = [];
+
+    for (const n of finalNodes) {
+        const isActive = n.id === hoveredNodeId || n.selected;
+        if (!isActive || !renderNodeMenuRef.current) continue;
+
+        const menuContent = renderNodeMenuRef.current(n.id);
+        if (!menuContent) continue;
+
+        const isConnected = (outputCounts.get(n.id) || 0) > 0;
+        const pw = (n.data && n.data.width) || cfg.nodeWidth;
+        const ph = (n.data && n.data.height) || cfg.nodeHeight;
+        const vOffset = cfg.addButtonVerticalOffset || 16;
+        const hOffset = isConnected ? (cfg.addButtonRightOffset ?? (pw / 2 + 8)) : 0;
+        const size = cfg.addButtonSize || 24;
+
+        const parentX = resolveNodeX(n);
+        const parentY = resolveNodeY(n);
+
+        actionNodes.push({
+            id: `__action-${n.id}`,
+            type: '__action',
+            position: {
+                x: parentX + pw / 2 + hOffset - size / 2,
+                y: parentY + ph + vOffset,
+            },
+            data: {
+                parentId: n.id,
+                size,
+                renderMenu: () => menuContent,
+                onHoverParent,
+                onUnhoverParent,
+            },
+            selectable: false,
+            draggable: false,
+            connectable: true,
+            focusable: false,
+        });
+
+        actionEdges.push({
+            id: `__action-edge-${n.id}`,
+            source: n.id,
+            sourceHandle: '__action-output',
+            target: `__action-${n.id}`,
+            targetHandle: '__action-input',
+            type: 'default',
+            pathOptions: { curvature: 1.0 },
+            style: {
+                stroke: cfg.edgeStrokeColor,
+                strokeWidth: cfg.edgeStrokeWidth,
+            },
+            selectable: false,
+            deletable: false,
+            focusable: false,
+        });
+    }
+
+    return { actionNodes, actionEdges };
+}
 
 /**
  * Internal component that renders inside ReactFlowProvider.
@@ -255,63 +317,9 @@ function OrthogonalFlowInner({
         }));
 
         // --- Compute action nodes & edges ---
-        const actionNodes = [];
-        const actionEdges = [];
-
-        for (const n of finalNodes) {
-            const isActive = n.id === hoveredNodeId || n.selected;
-            if (!isActive || !renderNodeMenuRef.current) continue;
-
-            const menuContent = renderNodeMenuRef.current(n.id);
-            if (!menuContent) continue;
-
-            const isConnected = (outputCounts.get(n.id) || 0) > 0;
-            const pw = (n.data && n.data.width) || cfg.nodeWidth;
-            const ph = (n.data && n.data.height) || cfg.nodeHeight;
-            const vOffset = cfg.addButtonVerticalOffset || 16;
-            const hOffset = isConnected ? (cfg.addButtonRightOffset ?? (pw / 2 + 8)) : 0;
-            const size = cfg.addButtonSize || 24;
-
-            const parentX = (n.positionAbsolute && n.positionAbsolute.x != null) ? n.positionAbsolute.x : n.position.x;
-            const parentY = (n.positionAbsolute && n.positionAbsolute.y != null) ? n.positionAbsolute.y : n.position.y;
-
-            actionNodes.push({
-                id: `__action-${n.id}`,
-                type: '__action',
-                position: {
-                    x: parentX + pw / 2 + hOffset - size / 2,
-                    y: parentY + ph + vOffset,
-                },
-                data: {
-                    parentId: n.id,
-                    size,
-                    renderMenu: () => menuContent,
-                    onHoverParent,
-                    onUnhoverParent,
-                },
-                selectable: false,
-                draggable: false,
-                connectable: true,
-                focusable: false,
-            });
-
-            actionEdges.push({
-                id: `__action-edge-${n.id}`,
-                source: n.id,
-                sourceHandle: '__action-output',
-                target: `__action-${n.id}`,
-                targetHandle: '__action-input',
-                type: 'default',
-                pathOptions: { curvature: 1.0 },
-                style: {
-                    stroke: cfg.edgeStrokeColor,
-                    strokeWidth: cfg.edgeStrokeWidth,
-                },
-                selectable: false,
-                deletable: false,
-                focusable: false,
-            });
-        }
+        const { actionNodes, actionEdges } = buildActionNodesAndEdges(
+            finalNodes, outputCounts, hoveredNodeId, renderNodeMenuRef, cfg, onHoverParent, onUnhoverParent,
+        );
 
         return {
             visibleNodes: finalNodes.concat(actionNodes),

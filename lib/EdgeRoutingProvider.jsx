@@ -4,7 +4,7 @@ import {
     computeOrthogonalPath,
     separateOverlappingEdges,
 } from "./orthogonalRouter.js";
-import { DEFAULTS } from "./defaults.js";
+import { DEFAULTS, resolveNodeX, resolveNodeY, resolveNodeWidth, resolveNodeHeight } from "./defaults.js";
 
 const EdgeRoutingContext = createContext(null);
 
@@ -26,36 +26,25 @@ const POSITION_TO_DIR = {
     right: "right",
 };
 
-/**
- * Resolve handle position and direction from nodeInternals handleBounds.
- * Falls back to port formula when handleBounds is unavailable.
- * Returns { x, y, dir } where dir is the stub direction.
- */
-function getHandleInfo(node, handleId, handleType, cfg) {
-    const nodeX = (node.positionAbsolute && node.positionAbsolute.x != null) ? node.positionAbsolute.x : node.position.x;
-    const nodeY = (node.positionAbsolute && node.positionAbsolute.y != null) ? node.positionAbsolute.y : node.position.y;
-    const nodeWidth = node.width != null ? node.width : (node.data && node.data.width != null ? node.data.width : cfg.nodeWidth);
-    const nodeHeight = node.height != null ? node.height : (node.data && node.data.height != null ? node.data.height : cfg.nodeHeight);
+// ---------- Handle resolution helpers ----------
 
-    // Try DOM-measured handleBounds first
+function resolveHandleFromBounds(node, handleId, handleType, nodeX, nodeY) {
     const bounds = node.handleBounds;
-    if (bounds) {
-        const handles = handleType === "source" ? bounds.source : bounds.target;
-        if (handles) {
-            const handle = handles.find((h) => h.id === handleId);
-            if (handle) {
-                return {
-                    x: nodeX + handle.x + handle.width / 2,
-                    y: nodeY + handle.y + handle.height / 2,
-                    dir:
-                        POSITION_TO_DIR[handle.position] ||
-                        (handleType === "source" ? "bottom" : "top"),
-                };
-            }
-        }
-    }
+    if (!bounds) return null;
+    const handles = handleType === "source" ? bounds.source : bounds.target;
+    if (!handles) return null;
+    const handle = handles.find((h) => h.id === handleId);
+    if (!handle) return null;
+    return {
+        x: nodeX + handle.x + handle.width / 2,
+        y: nodeY + handle.y + handle.height / 2,
+        dir:
+            POSITION_TO_DIR[handle.position] ||
+            (handleType === "source" ? "bottom" : "top"),
+    };
+}
 
-    // Fallback: centered handles 8px apart
+function resolveHandleFallback(node, handleId, handleType, nodeX, nodeY, nodeWidth, nodeHeight) {
     const idx = parseInt((handleId || "").split("-")[1], 10) || 0;
 
     if (handleType === "source") {
@@ -66,15 +55,33 @@ function getHandleInfo(node, handleId, handleType, cfg) {
             y: nodeY + nodeHeight,
             dir: "bottom",
         };
-    } else {
-        const total = (node.data && node.data.inputs) || 1;
-        const offset = (idx - (total - 1) / 2) * 8;
-        return {
-            x: nodeX + nodeWidth / 2 + offset,
-            y: nodeY,
-            dir: "top",
-        };
     }
+    const total = (node.data && node.data.inputs) || 1;
+    const offset = (idx - (total - 1) / 2) * 8;
+    return {
+        x: nodeX + nodeWidth / 2 + offset,
+        y: nodeY,
+        dir: "top",
+    };
+}
+
+/**
+ * Resolve handle position and direction from nodeInternals handleBounds.
+ * Falls back to port formula when handleBounds is unavailable.
+ * Returns { x, y, dir } where dir is the stub direction.
+ */
+function getHandleInfo(node, handleId, handleType, cfg) {
+    const nodeX = resolveNodeX(node);
+    const nodeY = resolveNodeY(node);
+    const nodeWidth = resolveNodeWidth(node, cfg.nodeWidth);
+    const nodeHeight = resolveNodeHeight(node, cfg.nodeHeight);
+
+    // Try DOM-measured handleBounds first
+    const fromBounds = resolveHandleFromBounds(node, handleId, handleType, nodeX, nodeY);
+    if (fromBounds) return fromBounds;
+
+    // Fallback: centered handles 8px apart
+    return resolveHandleFallback(node, handleId, handleType, nodeX, nodeY, nodeWidth, nodeHeight);
 }
 
 /**
@@ -85,32 +92,79 @@ function getHandleInfo(node, handleId, handleType, cfg) {
  * - Source roughly centered above → enter from top
  */
 function getMergeTargetInfo(sourceNode, mergeNode, cfg) {
-    const srcX = (sourceNode.positionAbsolute && sourceNode.positionAbsolute.x != null) ? sourceNode.positionAbsolute.x : sourceNode.position.x;
-    const srcW = sourceNode.width != null ? sourceNode.width : (sourceNode.data && sourceNode.data.width != null ? sourceNode.data.width : cfg.nodeWidth);
+    const srcX = resolveNodeX(sourceNode);
+    const srcW = resolveNodeWidth(sourceNode, cfg.nodeWidth);
     const srcCenterX = srcX + srcW / 2;
 
-    const tgtX = (mergeNode.positionAbsolute && mergeNode.positionAbsolute.x != null) ? mergeNode.positionAbsolute.x : mergeNode.position.x;
-    const tgtY = (mergeNode.positionAbsolute && mergeNode.positionAbsolute.y != null) ? mergeNode.positionAbsolute.y : mergeNode.position.y;
-    const tgtW = mergeNode.width != null ? mergeNode.width : (mergeNode.data && mergeNode.data.width != null ? mergeNode.data.width : 40);
-    const tgtH = mergeNode.height != null ? mergeNode.height : (mergeNode.data && mergeNode.data.height != null ? mergeNode.data.height : 40);
+    const tgtX = resolveNodeX(mergeNode);
+    const tgtY = resolveNodeY(mergeNode);
+    const tgtW = resolveNodeWidth(mergeNode, 40);
+    const tgtH = resolveNodeHeight(mergeNode, 40);
     const tgtCenterX = tgtX + tgtW / 2;
     const tgtCenterY = tgtY + tgtH / 2;
-    const radius = tgtW / 2;
 
     const dx = srcCenterX - tgtCenterX;
     // Threshold: if source center is within half the merge width, treat as "above"
     const threshold = tgtW / 2;
 
     if (dx < -threshold) {
-        // Source is to the left → enter from left
         return { x: tgtX, y: tgtCenterY, dir: "left" };
-    } else if (dx > threshold) {
-        // Source is to the right → enter from right
-        return { x: tgtX + tgtW, y: tgtCenterY, dir: "right" };
-    } else {
-        // Source is roughly centered → enter from top
-        return { x: tgtCenterX, y: tgtY, dir: "top" };
     }
+    if (dx > threshold) {
+        return { x: tgtX + tgtW, y: tgtCenterY, dir: "right" };
+    }
+    return { x: tgtCenterX, y: tgtY, dir: "top" };
+}
+
+// ---------- Edge computation helpers ----------
+
+function buildNodeRect(n, cfg) {
+    return {
+        id: n.id,
+        x: resolveNodeX(n),
+        y: resolveNodeY(n),
+        width: resolveNodeWidth(n, cfg.nodeWidth),
+        height: resolveNodeHeight(n, cfg.nodeHeight),
+    };
+}
+
+function buildObstacleList(nodeInternals, sourceId, targetId, cfg) {
+    const obstacles = [];
+    for (const [id, n] of nodeInternals) {
+        if (id === sourceId || id === targetId) continue;
+        if (id.startsWith('__action')) continue;
+        obstacles.push(buildNodeRect(n, cfg));
+    }
+    return obstacles;
+}
+
+function computeEdgePath(edge, nodeInternals, cfg) {
+    const sourceNode = nodeInternals.get(edge.source);
+    const targetNode = nodeInternals.get(edge.target);
+    if (!sourceNode || !targetNode) return null;
+
+    const srcInfo = getHandleInfo(sourceNode, edge.sourceHandle, "source", cfg);
+
+    // Merge node: dynamically compute entry side based on source position
+    const tgtInfo = (targetNode.data && targetNode.data.isMerge)
+        ? getMergeTargetInfo(sourceNode, targetNode, cfg)
+        : getHandleInfo(targetNode, edge.targetHandle, "target", cfg);
+
+    const obstacles = buildObstacleList(nodeInternals, edge.source, edge.target, cfg);
+
+    const edgeCfg = {
+        ...cfg,
+        ...((edge.data && edge.data.routingConfig) || {}),
+        sourceDir: srcInfo.dir,
+        targetDir: tgtInfo.dir,
+        earlyBendBias: (targetNode.data && targetNode.data.isMerge) ? 0 : cfg.earlyBendBias,
+    };
+
+    const { points } = computeOrthogonalPath(
+        srcInfo.x, srcInfo.y, tgtInfo.x, tgtInfo.y, obstacles, edgeCfg,
+    );
+
+    return { id: edge.id, points };
 }
 
 /**
@@ -131,75 +185,15 @@ export default function EdgeRoutingProvider({ children, config }) {
         }
 
         const edgePaths = [];
-
         for (const edge of edges) {
             if (edge.type !== "orthogonal") continue;
-
-            const sourceNode = nodeInternals.get(edge.source);
-            const targetNode = nodeInternals.get(edge.target);
-            if (!sourceNode || !targetNode) continue;
-
-            const srcInfo = getHandleInfo(
-                sourceNode,
-                edge.sourceHandle,
-                "source",
-                cfg,
-            );
-            let tgtInfo;
-
-            // Merge node: dynamically compute entry side based on source position
-            if (targetNode.data && targetNode.data.isMerge) {
-                tgtInfo = getMergeTargetInfo(sourceNode, targetNode, cfg);
-            } else {
-                tgtInfo = getHandleInfo(
-                    targetNode,
-                    edge.targetHandle,
-                    "target",
-                    cfg,
-                );
-            }
-
-            // Build obstacle list excluding source, target, and phantom nodes
-            const obstacles = [];
-            for (const [id, n] of nodeInternals) {
-                if (id === edge.source || id === edge.target) continue;
-                if (id.startsWith('__action')) continue;
-                obstacles.push({
-                    id,
-                    x: (n.positionAbsolute && n.positionAbsolute.x != null) ? n.positionAbsolute.x : n.position.x,
-                    y: (n.positionAbsolute && n.positionAbsolute.y != null) ? n.positionAbsolute.y : n.position.y,
-                    width: n.width != null ? n.width : (n.data && n.data.width != null ? n.data.width : cfg.nodeWidth),
-                    height: n.height != null ? n.height : (n.data && n.data.height != null ? n.data.height : cfg.nodeHeight),
-                });
-            }
-
-            const edgeCfg = {
-                ...cfg,
-                ...((edge.data && edge.data.routingConfig) || {}),
-                sourceDir: srcInfo.dir,
-                targetDir: tgtInfo.dir,
-                // Apply early-bend bias to all edges except those connecting
-                // to a merge node. Merge-targeting edges use late-bend
-                // (straight down then turn) for cleaner converging paths.
-                earlyBendBias: (targetNode.data && targetNode.data.isMerge) ? 0 : cfg.earlyBendBias,
-            };
-            const { points } = computeOrthogonalPath(
-                srcInfo.x,
-                srcInfo.y,
-                tgtInfo.x,
-                tgtInfo.y,
-                obstacles,
-                edgeCfg,
-            );
-
-            edgePaths.push({ id: edge.id, points });
+            const result = computeEdgePath(edge, nodeInternals, cfg);
+            if (result) edgePaths.push(result);
         }
 
         // Apply separation and rounding across all edges
         const separated = separateOverlappingEdges(
-            edgePaths,
-            cfg.edgeSeparation,
-            cfg.bendRadius,
+            edgePaths, cfg.edgeSeparation, cfg.bendRadius,
         );
 
         const map = new Map();

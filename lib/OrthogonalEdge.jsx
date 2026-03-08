@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { BaseEdge, EdgeLabelRenderer, useNodes } from 'reactflow';
 import { computeOrthogonalPath, waypointsToSvgPath } from './orthogonalRouter.js';
-import { DEFAULTS } from './defaults.js';
+import { DEFAULTS, resolveNodeX, resolveNodeY, resolveNodeWidth, resolveNodeHeight } from './defaults.js';
 import { useEdgeRouting } from './EdgeRoutingProvider.jsx';
 import './orthogonalEdge.css';
 
@@ -35,6 +35,101 @@ function pathMidpoint(points) {
   return points[points.length - 1];
 }
 
+function resolveEarlyBendBias(data) {
+  if (!(data && data.label)) return 0;
+  if (data && data.routingConfig && data.routingConfig.earlyBendBias != null) {
+    return data.routingConfig.earlyBendBias;
+  }
+  return DEFAULTS.earlyBendBias;
+}
+
+function buildNodeRect(n, cfg) {
+  return {
+    id: n.id,
+    x: resolveNodeX(n),
+    y: resolveNodeY(n),
+    width: resolveNodeWidth(n, cfg.nodeWidth),
+    height: resolveNodeHeight(n, cfg.nodeHeight),
+  };
+}
+
+function computeFallbackEdgePath(nodes, source, target, sourceX, sourceY, targetX, targetY, cfg) {
+  const allRects = nodes
+    .filter((n) => n.id !== source && n.id !== target)
+    .map((n) => buildNodeRect(n, cfg));
+
+  const { points } = computeOrthogonalPath(
+    sourceX, sourceY, targetX, targetY, allRects, cfg
+  );
+  return {
+    edgePoints: points,
+    edgePath: waypointsToSvgPath(points, cfg.bendRadius || 0),
+  };
+}
+
+function resolveLabelContent(data, label) {
+  if (!label) return undefined;
+  if (data && data.labelClassName) {
+    return <span className={data.labelClassName}>{label}</span>;
+  }
+  return label;
+}
+
+function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, toggleMenu, handleDelete, onMouseEnter, onMouseLeave, setMenuOpen) {
+  return (
+    <EdgeLabelRenderer>
+      <div
+        style={{
+          position: 'absolute',
+          transform: `translate(-50%, -50%) translate(${mid.x}px, ${mid.y}px)`,
+          pointerEvents: 'all',
+        }}
+        className="nodrag nopan"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        <div className="eq-pipeline-canvas-edge-toolbar">
+          {/* Inline add button — only when app provides renderEdgeMenu */}
+          {hasEdgeMenu && (
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={toggleMenu}
+                className="eq-pipeline-canvas-edge-toolbar-btn"
+                title="Add node here"
+              >
+                +
+              </button>
+              {menuOpen && (
+                <div
+                  className="eq-pipeline-canvas-edge-toolbar-menu"
+                  onMouseEnter={onMouseEnter}
+                  onMouseLeave={onMouseLeave}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {data.renderEdgeMenu()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Delete button */}
+          {data && data.onDeleteEdge && (
+            (data && data.deleteButton) || (
+              <button
+                onClick={handleDelete}
+                className="eq-pipeline-canvas-edge-toolbar-btn"
+                title="Delete edge"
+              >
+                ×
+              </button>
+            )
+          )}
+        </div>
+      </div>
+    </EdgeLabelRenderer>
+  );
+}
+
 export default function OrthogonalEdge({
   id,
   sourceX,
@@ -51,7 +146,7 @@ export default function OrthogonalEdge({
   const cfg = {
     ...DEFAULTS,
     ...((data && data.routingConfig) || {}),
-    earlyBendBias: (data && data.label) ? ((data && data.routingConfig && data.routingConfig.earlyBendBias != null) ? data.routingConfig.earlyBendBias : DEFAULTS.earlyBendBias) : 0,
+    earlyBendBias: resolveEarlyBendBias(data),
   };
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,26 +166,9 @@ export default function OrthogonalEdge({
     edgePath = routed.path;
     edgePoints = routed.points;
   } else {
-    const allRects = nodes
-      .filter((n) => n.id !== source && n.id !== target)
-      .map((n) => ({
-        id: n.id,
-        x: (n.positionAbsolute && n.positionAbsolute.x != null) ? n.positionAbsolute.x : n.position.x,
-        y: (n.positionAbsolute && n.positionAbsolute.y != null) ? n.positionAbsolute.y : n.position.y,
-        width: n.width != null ? n.width : (n.data && n.data.width != null ? n.data.width : cfg.nodeWidth),
-        height: n.height != null ? n.height : (n.data && n.data.height != null ? n.data.height : cfg.nodeHeight),
-      }));
-
-    const { points } = computeOrthogonalPath(
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      allRects,
-      cfg
-    );
-    edgePoints = points;
-    edgePath = waypointsToSvgPath(points, cfg.bendRadius || 0);
+    const result = computeFallbackEdgePath(nodes, source, target, sourceX, sourceY, targetX, targetY, cfg);
+    edgePoints = result.edgePoints;
+    edgePath = result.edgePath;
   }
 
   // --- Selection styling ---
@@ -105,17 +183,12 @@ export default function OrthogonalEdge({
   let labelX, labelY;
 
   if (label && edgePoints && edgePoints.length >= 2) {
-    // Position at the start of the last vertical segment, 8px below
     const last = edgePoints.length - 1;
     labelX = edgePoints[last].x;
     labelY = edgePoints[last - 1].y + 16;
   }
 
-  const labelContent = label
-    ? ((data && data.labelClassName)
-        ? <span className={data.labelClassName}>{label}</span>
-        : label)
-    : undefined;
+  const labelContent = resolveLabelContent(data, label);
 
   // --- Midpoint toolbar (delete + inline add) ---
   const mid = (hovered || selected) ? pathMidpoint(edgePoints) : null;
@@ -165,58 +238,7 @@ export default function OrthogonalEdge({
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       />
-      {showToolbar && mid && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${mid.x}px, ${mid.y}px)`,
-              pointerEvents: 'all',
-            }}
-            className="nodrag nopan"
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-          >
-            <div className="eq-pipeline-canvas-edge-toolbar">
-              {/* Inline add button — only when app provides renderEdgeMenu */}
-              {hasEdgeMenu && (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    onClick={toggleMenu}
-                    className="eq-pipeline-canvas-edge-toolbar-btn"
-                    title="Add node here"
-                  >
-                    +
-                  </button>
-                  {menuOpen && (
-                    <div
-                      className="eq-pipeline-canvas-edge-toolbar-menu"
-                      onMouseEnter={onMouseEnter}
-                      onMouseLeave={onMouseLeave}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {data.renderEdgeMenu()}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Delete button */}
-              {data && data.onDeleteEdge && (
-                (data && data.deleteButton) || (
-                  <button
-                    onClick={handleDelete}
-                    className="eq-pipeline-canvas-edge-toolbar-btn"
-                    title="Delete edge"
-                  >
-                    ×
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        </EdgeLabelRenderer>
-      )}
+      {showToolbar && mid && renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, toggleMenu, handleDelete, onMouseEnter, onMouseLeave, setMenuOpen)}
     </React.Fragment>
   );
 }

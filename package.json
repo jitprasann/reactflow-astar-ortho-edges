@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint lib/",
+    "lint:report": "eslint lib/ --format json --output-file eslint-report.json",
+    "lint:fix": "eslint lib/ --fix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "eslint-plugin-sonarjs": "^3.0.7",
+    "globals": "^17.4.0",
+    "ts-api-utils": "^2.4.0",
+    "typescript": "^5.9.3"
+  }
+}

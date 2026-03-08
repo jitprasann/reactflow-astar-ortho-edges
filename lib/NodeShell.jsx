@@ -20,7 +20,7 @@ import './nodeShell.css';
  *   className - CSS class(es) for the outer box
  *   style     - inline style overrides for the outer box
  */
-const NodeShell = memo(function NodeShell({ id, data, selected, children, className, style }) {
+const NodeShell = memo(function NodeShell({ id, data, selected: _selected, children, className, style }) {
   const width = data.width || DEFAULTS.nodeWidth;
   const height = data.height || DEFAULTS.nodeHeight;
 

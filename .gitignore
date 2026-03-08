@@ -1,2 +1,4 @@
 node_modules/
 dist/
+eslint-report.json
+package-lock.json
