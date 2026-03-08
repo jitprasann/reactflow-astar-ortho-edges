@@ -50,8 +50,8 @@ export default function OrthogonalEdge({
 }) {
   const cfg = {
     ...DEFAULTS,
-    ...(data?.routingConfig || {}),
-    earlyBendBias: data?.label ? (data?.routingConfig?.earlyBendBias ?? DEFAULTS.earlyBendBias) : 0,
+    ...((data && data.routingConfig) || {}),
+    earlyBendBias: (data && data.label) ? ((data && data.routingConfig && data.routingConfig.earlyBendBias != null) ? data.routingConfig.earlyBendBias : DEFAULTS.earlyBendBias) : 0,
   };
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,10 +75,10 @@ export default function OrthogonalEdge({
       .filter((n) => n.id !== source && n.id !== target)
       .map((n) => ({
         id: n.id,
-        x: n.positionAbsolute?.x ?? n.position.x,
-        y: n.positionAbsolute?.y ?? n.position.y,
-        width: n.width ?? n.data?.width ?? cfg.nodeWidth,
-        height: n.height ?? n.data?.height ?? cfg.nodeHeight,
+        x: (n.positionAbsolute && n.positionAbsolute.x != null) ? n.positionAbsolute.x : n.position.x,
+        y: (n.positionAbsolute && n.positionAbsolute.y != null) ? n.positionAbsolute.y : n.position.y,
+        width: n.width != null ? n.width : (n.data && n.data.width != null ? n.data.width : cfg.nodeWidth),
+        height: n.height != null ? n.height : (n.data && n.data.height != null ? n.data.height : cfg.nodeHeight),
       }));
 
     const { points } = computeOrthogonalPath(
@@ -101,7 +101,7 @@ export default function OrthogonalEdge({
   };
 
   // --- Edge label ---
-  const label = data?.label;
+  const label = data && data.label;
   let labelX, labelY;
 
   if (label && edgePoints && edgePoints.length >= 2) {
@@ -112,22 +112,22 @@ export default function OrthogonalEdge({
   }
 
   const labelContent = label
-    ? (data?.labelClassName
+    ? ((data && data.labelClassName)
         ? <span className={data.labelClassName}>{label}</span>
         : label)
     : undefined;
 
   // --- Midpoint toolbar (delete + inline add) ---
   const mid = (hovered || selected) ? pathMidpoint(edgePoints) : null;
-  const hasEdgeMenu = !!data?.renderEdgeMenu;
-  const showToolbar = !!(mid && (data?.onDeleteEdge || hasEdgeMenu));
+  const hasEdgeMenu = !!(data && data.renderEdgeMenu);
+  const showToolbar = !!(mid && ((data && data.onDeleteEdge) || hasEdgeMenu));
 
   const handleDelete = useCallback(
     (e) => {
       e.stopPropagation();
-      if (data?.onDeleteEdge) data.onDeleteEdge(id);
+      if (data && data.onDeleteEdge) data.onDeleteEdge(id);
     },
-    [data?.onDeleteEdge, id]
+    [data && data.onDeleteEdge, id]
   );
 
   const toggleMenu = useCallback((e) => {
@@ -136,7 +136,7 @@ export default function OrthogonalEdge({
   }, []);
 
   return (
-    <>
+    <React.Fragment>
       <BaseEdge
         id={id}
         path={edgePath}
@@ -147,7 +147,7 @@ export default function OrthogonalEdge({
         labelY={labelY}
         labelStyle={{
           fontSize: cfg.edgeLabelFontSize,
-          ...(data?.labelStyle || {}),
+          ...((data && data.labelStyle) || {}),
         }}
         labelShowBg={!!label}
         labelBgStyle={{
@@ -202,8 +202,8 @@ export default function OrthogonalEdge({
               )}
 
               {/* Delete button */}
-              {data?.onDeleteEdge && (
-                data?.deleteButton || (
+              {data && data.onDeleteEdge && (
+                (data && data.deleteButton) || (
                   <button
                     onClick={handleDelete}
                     className="eq-pipeline-canvas-edge-toolbar-btn"
@@ -217,6 +217,6 @@ export default function OrthogonalEdge({
           </div>
         </EdgeLabelRenderer>
       )}
-    </>
+    </React.Fragment>
   );
 }

@@ -32,10 +32,10 @@ const POSITION_TO_DIR = {
  * Returns { x, y, dir } where dir is the stub direction.
  */
 function getHandleInfo(node, handleId, handleType, cfg) {
-    const nodeX = node.positionAbsolute?.x ?? node.position.x;
-    const nodeY = node.positionAbsolute?.y ?? node.position.y;
-    const nodeWidth = node.width ?? node.data?.width ?? cfg.nodeWidth;
-    const nodeHeight = node.height ?? node.data?.height ?? cfg.nodeHeight;
+    const nodeX = (node.positionAbsolute && node.positionAbsolute.x != null) ? node.positionAbsolute.x : node.position.x;
+    const nodeY = (node.positionAbsolute && node.positionAbsolute.y != null) ? node.positionAbsolute.y : node.position.y;
+    const nodeWidth = node.width != null ? node.width : (node.data && node.data.width != null ? node.data.width : cfg.nodeWidth);
+    const nodeHeight = node.height != null ? node.height : (node.data && node.data.height != null ? node.data.height : cfg.nodeHeight);
 
     // Try DOM-measured handleBounds first
     const bounds = node.handleBounds;
@@ -59,7 +59,7 @@ function getHandleInfo(node, handleId, handleType, cfg) {
     const idx = parseInt((handleId || "").split("-")[1], 10) || 0;
 
     if (handleType === "source") {
-        const total = node.data?.outputs || 1;
+        const total = (node.data && node.data.outputs) || 1;
         const offset = (idx - (total - 1) / 2) * 8;
         return {
             x: nodeX + nodeWidth / 2 + offset,
@@ -67,7 +67,7 @@ function getHandleInfo(node, handleId, handleType, cfg) {
             dir: "bottom",
         };
     } else {
-        const total = node.data?.inputs || 1;
+        const total = (node.data && node.data.inputs) || 1;
         const offset = (idx - (total - 1) / 2) * 8;
         return {
             x: nodeX + nodeWidth / 2 + offset,
@@ -85,14 +85,14 @@ function getHandleInfo(node, handleId, handleType, cfg) {
  * - Source roughly centered above → enter from top
  */
 function getMergeTargetInfo(sourceNode, mergeNode, cfg) {
-    const srcX = sourceNode.positionAbsolute?.x ?? sourceNode.position.x;
-    const srcW = sourceNode.width ?? sourceNode.data?.width ?? cfg.nodeWidth;
+    const srcX = (sourceNode.positionAbsolute && sourceNode.positionAbsolute.x != null) ? sourceNode.positionAbsolute.x : sourceNode.position.x;
+    const srcW = sourceNode.width != null ? sourceNode.width : (sourceNode.data && sourceNode.data.width != null ? sourceNode.data.width : cfg.nodeWidth);
     const srcCenterX = srcX + srcW / 2;
 
-    const tgtX = mergeNode.positionAbsolute?.x ?? mergeNode.position.x;
-    const tgtY = mergeNode.positionAbsolute?.y ?? mergeNode.position.y;
-    const tgtW = mergeNode.width ?? mergeNode.data?.width ?? 40;
-    const tgtH = mergeNode.height ?? mergeNode.data?.height ?? 40;
+    const tgtX = (mergeNode.positionAbsolute && mergeNode.positionAbsolute.x != null) ? mergeNode.positionAbsolute.x : mergeNode.position.x;
+    const tgtY = (mergeNode.positionAbsolute && mergeNode.positionAbsolute.y != null) ? mergeNode.positionAbsolute.y : mergeNode.position.y;
+    const tgtW = mergeNode.width != null ? mergeNode.width : (mergeNode.data && mergeNode.data.width != null ? mergeNode.data.width : 40);
+    const tgtH = mergeNode.height != null ? mergeNode.height : (mergeNode.data && mergeNode.data.height != null ? mergeNode.data.height : 40);
     const tgtCenterX = tgtX + tgtW / 2;
     const tgtCenterY = tgtY + tgtH / 2;
     const radius = tgtW / 2;
@@ -148,7 +148,7 @@ export default function EdgeRoutingProvider({ children, config }) {
             let tgtInfo;
 
             // Merge node: dynamically compute entry side based on source position
-            if (targetNode.data?.isMerge) {
+            if (targetNode.data && targetNode.data.isMerge) {
                 tgtInfo = getMergeTargetInfo(sourceNode, targetNode, cfg);
             } else {
                 tgtInfo = getHandleInfo(
@@ -166,22 +166,22 @@ export default function EdgeRoutingProvider({ children, config }) {
                 if (id.startsWith('__action')) continue;
                 obstacles.push({
                     id,
-                    x: n.positionAbsolute?.x ?? n.position.x,
-                    y: n.positionAbsolute?.y ?? n.position.y,
-                    width: n.width ?? n.data?.width ?? cfg.nodeWidth,
-                    height: n.height ?? n.data?.height ?? cfg.nodeHeight,
+                    x: (n.positionAbsolute && n.positionAbsolute.x != null) ? n.positionAbsolute.x : n.position.x,
+                    y: (n.positionAbsolute && n.positionAbsolute.y != null) ? n.positionAbsolute.y : n.position.y,
+                    width: n.width != null ? n.width : (n.data && n.data.width != null ? n.data.width : cfg.nodeWidth),
+                    height: n.height != null ? n.height : (n.data && n.data.height != null ? n.data.height : cfg.nodeHeight),
                 });
             }
 
             const edgeCfg = {
                 ...cfg,
-                ...(edge.data?.routingConfig || {}),
+                ...((edge.data && edge.data.routingConfig) || {}),
                 sourceDir: srcInfo.dir,
                 targetDir: tgtInfo.dir,
                 // Apply early-bend bias to all edges except those connecting
                 // to a merge node. Merge-targeting edges use late-bend
                 // (straight down then turn) for cleaner converging paths.
-                earlyBendBias: targetNode.data?.isMerge ? 0 : cfg.earlyBendBias,
+                earlyBendBias: (targetNode.data && targetNode.data.isMerge) ? 0 : cfg.earlyBendBias,
             };
             const { points } = computeOrthogonalPath(
                 srcInfo.x,
@@ -206,9 +206,6 @@ export default function EdgeRoutingProvider({ children, config }) {
         for (const ep of separated) {
             map.set(ep.id, { path: ep.path, points: ep.points });
         }
-        window.edgeMap = map;
-        window.myedges = edges;
-        window.mynodes = nodeInternals;
         return map;
     }, [nodeInternals, edges, config]);
 

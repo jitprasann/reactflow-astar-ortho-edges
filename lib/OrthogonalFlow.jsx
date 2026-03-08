@@ -266,14 +266,14 @@ function OrthogonalFlowInner({
             if (!menuContent) continue;
 
             const isConnected = (outputCounts.get(n.id) || 0) > 0;
-            const pw = n.data?.width || cfg.nodeWidth;
-            const ph = n.data?.height || cfg.nodeHeight;
+            const pw = (n.data && n.data.width) || cfg.nodeWidth;
+            const ph = (n.data && n.data.height) || cfg.nodeHeight;
             const vOffset = cfg.addButtonVerticalOffset || 16;
             const hOffset = isConnected ? (cfg.addButtonRightOffset ?? (pw / 2 + 8)) : 0;
             const size = cfg.addButtonSize || 24;
 
-            const parentX = n.positionAbsolute?.x ?? n.position.x;
-            const parentY = n.positionAbsolute?.y ?? n.position.y;
+            const parentX = (n.positionAbsolute && n.positionAbsolute.x != null) ? n.positionAbsolute.x : n.position.x;
+            const parentY = (n.positionAbsolute && n.positionAbsolute.y != null) ? n.positionAbsolute.y : n.position.y;
 
             actionNodes.push({
                 id: `__action-${n.id}`,
@@ -340,7 +340,7 @@ function OrthogonalFlowInner({
 
     const onEdgesChange = useCallback((changes) => {
         if (!appOnEdgesChangeRef.current) return;
-        const realChanges = changes.filter((c) => !c.id?.startsWith('__action'));
+        const realChanges = changes.filter((c) => !(c.id && c.id.startsWith('__action')));
         if (realChanges.length === 0) return;
         appOnEdgesChangeRef.current(realChanges);
     }, []);
