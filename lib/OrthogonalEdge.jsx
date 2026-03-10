@@ -75,7 +75,7 @@ function resolveLabelContent(data, label) {
   return label;
 }
 
-function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, toggleMenu, handleDelete, onMouseEnter, onMouseLeave, setMenuOpen) {
+function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
   return (
     <EdgeLabelRenderer>
       <div
@@ -85,15 +85,15 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, toggleMenu, han
           pointerEvents: 'all',
         }}
         className="nodrag nopan"
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
+        onMouseEnter={handlers.onMouseEnter}
+        onMouseLeave={handlers.onMouseLeave}
       >
         <div className="eq-pipeline-canvas-edge-toolbar">
           {/* Inline add button — only when app provides renderEdgeMenu */}
           {hasEdgeMenu && (
             <div style={{ position: 'relative' }}>
               <button
-                onClick={toggleMenu}
+                onClick={handlers.toggleMenu}
                 className="eq-pipeline-canvas-edge-toolbar-btn"
                 title="Add node here"
               >
@@ -102,9 +102,9 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, toggleMenu, han
               {menuOpen && (
                 <div
                   className="eq-pipeline-canvas-edge-toolbar-menu"
-                  onMouseEnter={onMouseEnter}
-                  onMouseLeave={onMouseLeave}
-                  onClick={() => setMenuOpen(false)}
+                  onMouseEnter={handlers.onMouseEnter}
+                  onMouseLeave={handlers.onMouseLeave}
+                  onClick={() => handlers.setMenuOpen(false)}
                 >
                   {data.renderEdgeMenu()}
                 </div>
@@ -116,7 +116,7 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, toggleMenu, han
           {data && data.onDeleteEdge && (
             (data && data.deleteButton) || (
               <button
-                onClick={handleDelete}
+                onClick={handlers.handleDelete}
                 className="eq-pipeline-canvas-edge-toolbar-btn"
                 title="Delete edge"
               >
@@ -238,7 +238,7 @@ export default function OrthogonalEdge({
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       />
-      {showToolbar && mid && renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, toggleMenu, handleDelete, onMouseEnter, onMouseLeave, setMenuOpen)}
+      {showToolbar && mid && renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, { toggleMenu, handleDelete, onMouseEnter, onMouseLeave, setMenuOpen })}
     </React.Fragment>
   );
 }
