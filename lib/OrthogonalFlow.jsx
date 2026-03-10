@@ -74,10 +74,7 @@ function buildActionNodesAndEdges(finalNodes, outputCounts, hoveredNodeId, rende
             targetHandle: '__action-input',
             type: 'default',
             pathOptions: { curvature: 1.0 },
-            style: {
-                stroke: cfg.edgeStrokeColor,
-                strokeWidth: cfg.edgeStrokeWidth,
-            },
+            style: {},
             selectable: false,
             deletable: false,
             focusable: false,

@@ -27,11 +27,6 @@
   background: #f0f0f0;
 }
 
-.react-flow__edge.selected .react-flow__edge-path {
-  stroke: #1976d2 !important;
-  stroke-width: 2.5 !important;
-}
-
 /* --- Node styles --- */
 .node-box .node-icon {
   font-size: 28px;

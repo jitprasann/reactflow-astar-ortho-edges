@@ -1,3 +1,21 @@
+/* --- Edge path: base, hover, selected --- */
+
+.react-flow__edge .eq-pipeline-compact-edge .react-flow__edge-path {
+  stroke: #555;
+  stroke-width: 1.5;
+  transition: stroke 0.15s, stroke-width 0.15s;
+}
+
+.react-flow__edge:hover .eq-pipeline-compact-edge .react-flow__edge-path {
+  stroke: #333;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .eq-pipeline-compact-edge .react-flow__edge-path {
+  stroke: #1976d2;
+  stroke-width: 2.5;
+}
+
 /* Edge toolbar — pill container for + and × buttons */
 .eq-pipeline-canvas-edge-toolbar {
   display: flex;

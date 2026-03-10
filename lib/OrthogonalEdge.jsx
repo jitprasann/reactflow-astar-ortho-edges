@@ -171,12 +171,8 @@ export default function OrthogonalEdge({
     edgePath = result.edgePath;
   }
 
-  // --- Selection styling ---
-  const edgeStyle = {
-    stroke: selected ? cfg.edgeSelectedColor : cfg.edgeStrokeColor,
-    strokeWidth: selected ? cfg.edgeSelectedWidth : cfg.edgeStrokeWidth,
-    ...style,
-  };
+  // --- Edge styling (colors handled via CSS) ---
+  const edgeStyle = { ...style };
 
   // --- Edge label ---
   const label = data && data.label;
@@ -209,7 +205,7 @@ export default function OrthogonalEdge({
   }, []);
 
   return (
-    <React.Fragment>
+    <g className="eq-pipeline-compact-edge">
       <BaseEdge
         id={id}
         path={edgePath}
@@ -239,6 +235,6 @@ export default function OrthogonalEdge({
         onMouseLeave={onMouseLeave}
       />
       {showToolbar && mid && renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, { toggleMenu, handleDelete, onMouseEnter, onMouseLeave, setMenuOpen })}
-    </React.Fragment>
+    </g>
   );
 }
