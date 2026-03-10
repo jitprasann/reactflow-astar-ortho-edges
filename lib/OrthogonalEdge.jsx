@@ -171,9 +171,6 @@ export default function OrthogonalEdge({
     edgePath = result.edgePath;
   }
 
-  // --- Edge styling (colors handled via CSS) ---
-  const edgeStyle = { ...style };
-
   // --- Edge label ---
   const label = data && data.label;
   let labelX, labelY;
@@ -210,7 +207,7 @@ export default function OrthogonalEdge({
         id={id}
         path={edgePath}
         markerEnd={markerEnd}
-        style={edgeStyle}
+        style={style}
         label={labelContent}
         labelX={labelX}
         labelY={labelY}
