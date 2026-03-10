@@ -41,6 +41,21 @@
   background: #fff;
 }
 
+/* --- Node label input (inline editing) --- */
+
+.eq-pipeline-compact-node-wrapper .eq-pipeline-compact-node-label-input {
+  border: 1px solid #4a90d9;
+  border-radius: 3px;
+  outline: none;
+  padding: 1px 4px;
+  background: #fff;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 12px;
+  font-family: sans-serif;
+  text-align: center;
+}
+
 /* --- Node handles (invisible connection points) --- */
 /* Use ReactFlow selector + our class for specificity (no !important) */
 

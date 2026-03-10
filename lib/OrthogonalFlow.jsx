@@ -137,6 +137,7 @@ function OrthogonalFlowInner({
     const appOnEdgesChangeRef = useRef(appOnEdgesChange);
     appOnEdgesChangeRef.current = appOnEdgesChange;
 
+
     // --- Action node hover tracking ---
     const [hoveredNodeId, setHoveredNodeId] = useState(null);
     const hoverTimeoutRef = useRef(null);
@@ -243,6 +244,13 @@ function OrthogonalFlowInner({
         }
     }, [fireChange]);
 
+    const handleLabelChange = useCallback((nodeId, newLabel) => {
+        const updatedNodes = nodesRef.current.map((n) =>
+            n.id === nodeId ? { ...n, data: { ...n.data, label: newLabel } } : n
+        );
+        fireChange(updatedNodes, edgesRef.current);
+    }, [fireChange]);
+
     const handleLayout = useCallback(() => {
         const result = layoutAll(nodesRef.current, edgesRef.current);
         fireChange(result.nodes, result.edges);
@@ -275,6 +283,7 @@ function OrthogonalFlowInner({
             if (renderNodeMenuRef.current) {
                 extra.renderMenu = () => renderNodeMenuRef.current(n.id);
             }
+            extra.onLabelChange = handleLabelChange;
             return Object.keys(extra).length > 0
                 ? { ...n, data: { ...n.data, ...extra } }
                 : n;
@@ -322,7 +331,7 @@ function OrthogonalFlowInner({
             visibleNodes: finalNodes.concat(actionNodes),
             visibleEdges: edgesWithCallbacks.concat(actionEdges),
         };
-    }, [nodes, edges, onToggleCollapse, handleDeleteEdge, handleDeleteNode, hoveredNodeId, config, onHoverParent, onUnhoverParent]);
+    }, [nodes, edges, onToggleCollapse, handleDeleteEdge, handleDeleteNode, handleLabelChange, hoveredNodeId, config, onHoverParent, onUnhoverParent]);
 
     // --- ReactFlow event handlers ---
     const onNodesChange = useCallback((changes) => {

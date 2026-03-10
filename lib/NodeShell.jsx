@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { DEFAULTS } from './defaults.js';
 import './nodeShell.css';
@@ -41,6 +41,30 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
 
   const label = data.label || '';
 
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(label);
+
+  useEffect(() => {
+    if (!editing) setDraft(label);
+  }, [label, editing]);
+
+  const commitEdit = useCallback(() => {
+    setEditing(false);
+    if (data && data.onLabelChange) {
+      const finalLabel = draft.trim() || label;
+      data.onLabelChange(id, finalLabel);
+    }
+  }, [data, draft, label, id]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter') {
+      commitEdit();
+    } else if (e.key === 'Escape') {
+      setDraft(label);
+      setEditing(false);
+    }
+  }, [commitEdit, label]);
+
   let wrapperClass = 'eq-pipeline-compact-node-wrapper';
   if (className) wrapperClass += ' ' + className;
   if (selected) wrapperClass += ' selected';
@@ -77,19 +101,34 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             transform: 'translateX(-50%)',
             maxWidth: width,
             textAlign: 'center',
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            textOverflow: 'ellipsis',
+            overflow: editing ? 'visible' : 'hidden',
+            display: editing ? 'block' : '-webkit-box',
+            WebkitLineClamp: editing ? undefined : 2,
+            WebkitBoxOrient: editing ? undefined : 'vertical',
+            textOverflow: editing ? undefined : 'ellipsis',
             wordBreak: 'break-word',
             marginBottom: 4,
             fontSize: 12,
             fontFamily: 'sans-serif',
             lineHeight: 1.3,
-            pointerEvents: 'none',
+            pointerEvents: editing ? 'all' : 'auto',
+          }}
+          onDoubleClick={() => {
+            if (data && data.onLabelChange) {
+              setDraft(label);
+              setEditing(true);
+            }
           }}>
-          {label}
+          {editing ? (
+            <input
+              className="eq-pipeline-compact-node-label-input"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={handleKeyDown}
+              autoFocus
+            />
+          ) : label}
         </div>
       )}
 
