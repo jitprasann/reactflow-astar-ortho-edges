@@ -8,6 +8,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 
 import OrthogonalEdge from "./OrthogonalEdge.jsx";
+import ActionEdge from "./ActionEdge.jsx";
 import ActionNode from "./ActionNode.jsx";
 import EdgeRoutingProvider from "./EdgeRoutingProvider.jsx";
 import { getVisibleGraph } from "./layoutEngine.js";
@@ -22,7 +23,7 @@ import {
     layoutAll,
 } from "./graphActions.js";
 
-const builtInEdgeTypes = { orthogonal: OrthogonalEdge };
+const builtInEdgeTypes = { orthogonal: OrthogonalEdge, __action: ActionEdge };
 const builtInNodeTypes = { __action: ActionNode };
 
 function buildActionNodesAndEdges(finalNodes, outputCounts, hoveredNodeId, renderNodeMenuRef, cfg, onHoverParent, onUnhoverParent) {
@@ -72,8 +73,7 @@ function buildActionNodesAndEdges(finalNodes, outputCounts, hoveredNodeId, rende
             sourceHandle: '__action-output',
             target: `__action-${n.id}`,
             targetHandle: '__action-input',
-            type: 'default',
-            pathOptions: { curvature: 1.0 },
+            type: '__action',
             style: {},
             selectable: false,
             deletable: false,
