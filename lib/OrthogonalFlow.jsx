@@ -102,6 +102,7 @@ function OrthogonalFlowInner({
     renderEdgeMenu,
     api,
     config,
+    autoLayout,
     nodeTypes: userNodeTypes,
     edgeTypes: userEdgeTypes,
     children,
@@ -194,9 +195,17 @@ function OrthogonalFlowInner({
 
     // --- Internal handlers ---
 
+    const autoLayoutRef = useRef(autoLayout);
+    autoLayoutRef.current = autoLayout;
+
     const fireChange = useCallback((nextNodes, nextEdges) => {
         if (onChangeRef.current) {
-            onChangeRef.current({ nodes: nextNodes, edges: nextEdges });
+            if (autoLayoutRef.current) {
+                const result = layoutAll(nextNodes, nextEdges);
+                onChangeRef.current({ nodes: result.nodes, edges: result.edges });
+            } else {
+                onChangeRef.current({ nodes: nextNodes, edges: nextEdges });
+            }
         }
     }, []);
 
