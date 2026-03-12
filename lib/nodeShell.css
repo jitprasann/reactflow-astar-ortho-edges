@@ -117,6 +117,70 @@
   pointer-events: none;
 }
 
+/* --- Delete button (used by DeleteButton component) --- */
+
+.eq-pipeline-compact-node-delete-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid #c66;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 16px;
+  text-align: center;
+  color: #c33;
+}
+
+.eq-pipeline-compact-node-delete-btn:hover {
+  background: #fee;
+  border-color: #a33;
+}
+
+/* --- Collapse/expand button (used by CollapseButton component) --- */
+
+.eq-pipeline-compact-node-collapse-btn {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid #999;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #333;
+}
+
+/* --- Generic action button (used by NodeActionButton component) --- */
+
+.eq-pipeline-compact-node-action-btn {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid #999;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #333;
+}
+
+.eq-pipeline-compact-node-action-btn:hover {
+  background: #f0f0f0;
+  border-color: #666;
+}
+
 .eq-pipeline-compact-action-menu {
   position: absolute;
   top: 28px;

@@ -7,10 +7,11 @@ import './nodeShell.css';
  * NodeShell — generic wrapper for orthogonal-flow nodes.
  *
  * Provides: dynamic input/output handles, handle-count updates,
- * hidden phantom-output handle, and an optional label above the box.
+ * hidden phantom-output handle, an optional label above the box.
  *
- * All styling and domain-specific behavior (collapse buttons, variant
- * colors, special handle shapes) belong in the app's node components.
+ * Action buttons (delete, collapse, etc.) are NOT rendered here.
+ * Each node type controls its own buttons via reusable components
+ * such as DeleteButton and CollapseButton.
  *
  * Props:
  *   id        - node ID (from ReactFlow)

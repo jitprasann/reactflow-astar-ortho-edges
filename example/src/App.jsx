@@ -246,6 +246,13 @@ export default function App() {
         [],
     );
 
+    // Change node type callback (passed via nodeCallbacks)
+    const handleChangeType = useCallback((nodeId, newType) => {
+        setNodes((nds) => nds.map((n) =>
+            n.id === nodeId ? { ...n, type: newType } : n
+        ));
+    }, []);
+
     // Factory: app decides IDs, labels, structure for new nodes
     const handleCreateNode = useCallback((parentId, type, context) => {
         if (type === "node") {
@@ -495,6 +502,10 @@ export default function App() {
                 onDeleteEdge={handleDeleteEdge}
                 renderNodeMenu={renderNodeMenu}
                 renderEdgeMenu={renderEdgeMenu}
+                nodeCallbacks={{
+                    onChangeType: handleChangeType,
+                    availableTypes: ['square', 'branch'],
+                }}
                 nodeTypes={nodeTypes}
                 autoLayout={true}
             >

@@ -100,6 +100,7 @@ function OrthogonalFlowInner({
     onDeleteEdge: onDeleteEdgeProp,
     renderNodeMenu,
     renderEdgeMenu,
+    nodeCallbacks,
     api,
     config,
     autoLayout,
@@ -137,6 +138,8 @@ function OrthogonalFlowInner({
     appOnNodesChangeRef.current = appOnNodesChange;
     const appOnEdgesChangeRef = useRef(appOnEdgesChange);
     appOnEdgesChangeRef.current = appOnEdgesChange;
+    const nodeCallbacksRef = useRef(nodeCallbacks);
+    nodeCallbacksRef.current = nodeCallbacks;
 
 
     // --- Action node hover tracking ---
@@ -293,6 +296,13 @@ function OrthogonalFlowInner({
                 extra.renderMenu = () => renderNodeMenuRef.current(n.id);
             }
             extra.onLabelChange = handleLabelChange;
+            const custom = nodeCallbacksRef.current;
+            if (custom) {
+                const keys = Object.keys(custom);
+                for (let i = 0; i < keys.length; i++) {
+                    extra[keys[i]] = custom[keys[i]];
+                }
+            }
             return Object.keys(extra).length > 0
                 ? { ...n, data: { ...n.data, ...extra } }
                 : n;
