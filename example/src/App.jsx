@@ -162,39 +162,6 @@ const rawEdges = [
 const initialNodes = layoutGraphDagre(rawNodes, rawEdges);
 const initialEdges = rawEdges;
 
-// --- Menu styles ---
-const sectionHeaderStyle = {
-    padding: "4px 12px 2px",
-    fontSize: 10,
-    color: "#999",
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    userSelect: "none",
-};
-
-const menuItemStyle = {
-    padding: "6px 12px",
-    cursor: "pointer",
-    fontSize: 12,
-    color: "#333",
-    whiteSpace: "nowrap",
-};
-
-function MenuItem({ onClick, children, style: extraStyle }) {
-    return (
-        <div
-            onClick={onClick}
-            style={{ ...menuItemStyle, ...extraStyle }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f0f0")}
-            onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-            }
-        >
-            {children}
-        </div>
-    );
-}
 
 export default function App() {
     const [nodes, setNodes] = useState(initialNodes);
@@ -424,62 +391,57 @@ export default function App() {
     }, []);
 
     // App-controlled menu CONTENT for node "+" button
+    // Uses fetchItems with a simulated delay to demonstrate loading state
     const renderNodeMenu = useCallback(
         (nodeId) => {
-            const node = flowApi.getNodes?.()?.find((n) => n.id === nodeId);
-            if (node?.data?.isMerge || node?.id === "end") return null;
-            return (
-                <div>
-                    <div style={sectionHeaderStyle}>Add new</div>
-                    <MenuItem onClick={() => flowApi.addNode(nodeId, "node")}>
-                        Add Node
-                    </MenuItem>
-                    <MenuItem
-                        onClick={() => flowApi.addNode(nodeId, "branch")}
-                        style={{ borderTop: "1px solid #eee" }}
-                    >
-                        Add Branch
-                    </MenuItem>
-                    <div
-                        style={{ borderTop: "2px solid #eee", marginTop: 2 }}
-                    />
-                    <div style={sectionHeaderStyle}>Connect to</div>
-                    {flowApi.getNodes &&
-                        flowApi
-                            .getNodes()
-                            .filter((n) => n.id !== nodeId && !n.data?.isMerge)
-                            .map((n) => (
-                                <MenuItem
-                                    key={n.id}
-                                    onClick={() =>
-                                        flowApi.connectNodes(nodeId, n.id)
-                                    }
-                                >
-                                    {n.data?.label || n.id}
-                                </MenuItem>
-                            ))}
-                </div>
-            );
+            var allNodes = flowApi.getNodes ? flowApi.getNodes() : [];
+            var node = allNodes.find(function (n) { return n.id === nodeId; });
+            if (node && node.data && node.data.isMerge) return null;
+            if (node && node.id === "end") return null;
+
+            return {
+                fetchItems: () => new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve({
+                            sections: [
+                                {
+                                    name: "Add new",
+                                    items: [
+                                        { label: "Add Node", onClick: () => flowApi.addNode(nodeId, "node") },
+                                        { label: "Add Branch", onClick: () => flowApi.addNode(nodeId, "branch") },
+                                    ],
+                                },
+                                {
+                                    name: "Connect to",
+                                    items: allNodes
+                                        .filter((n) => n.id !== nodeId && !(n.data && n.data.isMerge))
+                                        .map((n) => ({
+                                            label: (n.data && n.data.label) || n.id,
+                                            onClick: () => flowApi.connectNodes(nodeId, n.id),
+                                        })),
+                                },
+                            ],
+                        });
+                    }, 800);
+                }),
+            };
         },
         [flowApi],
     );
 
     // App-controlled menu CONTENT for edge "+" button
     const renderEdgeMenu = useCallback(
-        (edgeId, sourceId, targetId) => (
-            <div>
-                <div style={sectionHeaderStyle}>Insert between</div>
-                <MenuItem onClick={() => flowApi.addNodeInline(edgeId, "node")}>
-                    Add Node
-                </MenuItem>
-                <MenuItem
-                    onClick={() => flowApi.addNodeInline(edgeId, "branch")}
-                    style={{ borderTop: "1px solid #eee" }}
-                >
-                    Add Branch
-                </MenuItem>
-            </div>
-        ),
+        (edgeId) => ({
+            sections: [
+                {
+                    name: "Insert between",
+                    items: [
+                        { label: "Add Node", onClick: () => flowApi.addNodeInline(edgeId, "node") },
+                        { label: "Add Branch", onClick: () => flowApi.addNodeInline(edgeId, "branch") },
+                    ],
+                },
+            ],
+        }),
         [flowApi],
     );
 

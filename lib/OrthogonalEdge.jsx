@@ -3,13 +3,14 @@ import { BaseEdge, EdgeLabelRenderer, useNodes } from 'reactflow';
 import { computeOrthogonalPath, waypointsToSvgPath } from './orthogonalRouter.js';
 import { DEFAULTS, resolveNodeX, resolveNodeY, resolveNodeWidth, resolveNodeHeight } from './defaults.js';
 import { useEdgeRouting } from './EdgeRoutingProvider.jsx';
+import DataMenu from './DataMenu.jsx';
 import './orthogonalEdge.css';
 
 /**
  * Compute the geometric midpoint of an orthogonal path by walking
  * its segments and finding the point at half the total length.
  */
-function pathMidpoint(points) {
+const pathMidpoint = (points) => {
   if (!points || points.length < 2) return null;
 
   let totalLen = 0;
@@ -31,51 +32,49 @@ function pathMidpoint(points) {
     }
     half -= segLen;
   }
-  // Fallback: last point
   return points[points.length - 1];
-}
+};
 
-function resolveEarlyBendBias(data) {
+const resolveEarlyBendBias = (data) => {
   if (!(data && data.label)) return 0;
   if (data && data.routingConfig && data.routingConfig.earlyBendBias != null) {
     return data.routingConfig.earlyBendBias;
   }
   return DEFAULTS.earlyBendBias;
-}
+};
 
-function buildNodeRect(n, cfg) {
-  return {
-    id: n.id,
-    x: resolveNodeX(n),
-    y: resolveNodeY(n),
-    width: resolveNodeWidth(n, cfg.nodeWidth),
-    height: resolveNodeHeight(n, cfg.nodeHeight),
-  };
-}
+const buildNodeRect = (n, cfg) => ({
+  id: n.id,
+  x: resolveNodeX(n),
+  y: resolveNodeY(n),
+  width: resolveNodeWidth(n, cfg.nodeWidth),
+  height: resolveNodeHeight(n, cfg.nodeHeight),
+});
 
-function computeFallbackEdgePath(nodes, source, target, sourceX, sourceY, targetX, targetY, cfg) {
+const computeFallbackEdgePath = (nodes, source, target, sourceX, sourceY, targetX, targetY, cfg) => {
   const allRects = nodes
     .filter((n) => n.id !== source && n.id !== target)
     .map((n) => buildNodeRect(n, cfg));
 
-  const { points } = computeOrthogonalPath(
-    sourceX, sourceY, targetX, targetY, allRects, cfg
-  );
+  const { points } = computeOrthogonalPath(sourceX, sourceY, targetX, targetY, allRects, cfg);
   return {
     edgePoints: points,
     edgePath: waypointsToSvgPath(points, cfg.bendRadius || 0),
   };
-}
+};
 
-function resolveLabelContent(data, label) {
+const resolveLabelContent = (data, label) => {
   if (!label) return undefined;
   if (data && data.labelClassName) {
     return <span className={data.labelClassName}>{label}</span>;
   }
   return label;
-}
+};
 
-function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
+const renderEdgeToolbar = (data, id, mid, hasEdgeMenu, menuOpen, handlers) => {
+  const { onMouseEnter, onMouseLeave, toggleMenu, handleDelete, setMenuOpen } = handlers;
+  const edgeMenuContent = hasEdgeMenu && menuOpen ? data.renderEdgeMenu() : null;
+
   return (
     <EdgeLabelRenderer>
       <div
@@ -85,28 +84,28 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
           pointerEvents: 'all',
         }}
         className="nodrag nopan"
-        onMouseEnter={handlers.onMouseEnter}
-        onMouseLeave={handlers.onMouseLeave}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
         <div className="eq-pipeline-canvas-edge-toolbar">
           {/* Inline add button — only when app provides renderEdgeMenu */}
           {hasEdgeMenu && (
             <div style={{ position: 'relative' }}>
               <button
-                onClick={handlers.toggleMenu}
+                onClick={toggleMenu}
                 className="eq-pipeline-canvas-edge-toolbar-btn"
                 title="Add node here"
               >
                 +
               </button>
-              {menuOpen && (
+              {edgeMenuContent && (
                 <div
                   className="eq-pipeline-canvas-edge-toolbar-menu"
-                  onMouseEnter={handlers.onMouseEnter}
-                  onMouseLeave={handlers.onMouseLeave}
-                  onClick={() => handlers.setMenuOpen(false)}
+                  onMouseEnter={onMouseEnter}
+                  onMouseLeave={onMouseLeave}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {data.renderEdgeMenu()}
+                  <DataMenu menuConfig={edgeMenuContent} onClose={() => setMenuOpen(false)} />
                 </div>
               )}
             </div>
@@ -116,7 +115,7 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
           {data && data.onDeleteEdge && (
             (data && data.deleteButton) || (
               <button
-                onClick={handlers.handleDelete}
+                onClick={handleDelete}
                 className="eq-pipeline-canvas-edge-toolbar-btn"
                 title="Delete edge"
               >
@@ -128,7 +127,7 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
       </div>
     </EdgeLabelRenderer>
   );
-}
+};
 
 export default function OrthogonalEdge({
   id,
@@ -159,17 +158,9 @@ export default function OrthogonalEdge({
 
   // Fallback: compute independently when no provider is present
   const nodes = useNodes();
-  let edgePath;
-  let edgePoints;
-
-  if (routed) {
-    edgePath = routed.path;
-    edgePoints = routed.points;
-  } else {
-    const result = computeFallbackEdgePath(nodes, source, target, sourceX, sourceY, targetX, targetY, cfg);
-    edgePoints = result.edgePoints;
-    edgePath = result.edgePath;
-  }
+  const { edgePath, edgePoints } = routed
+    ? { edgePath: routed.path, edgePoints: routed.points }
+    : computeFallbackEdgePath(nodes, source, target, sourceX, sourceY, targetX, targetY, cfg);
 
   // --- Edge label ---
   const label = data && data.label;
@@ -188,13 +179,10 @@ export default function OrthogonalEdge({
   const hasEdgeMenu = !!(data && data.renderEdgeMenu);
   const showToolbar = !!(mid && ((data && data.onDeleteEdge) || hasEdgeMenu));
 
-  const handleDelete = useCallback(
-    (e) => {
-      e.stopPropagation();
-      if (data && data.onDeleteEdge) data.onDeleteEdge(id);
-    },
-    [data && data.onDeleteEdge, id]
-  );
+  const handleDelete = useCallback((e) => {
+    e.stopPropagation();
+    if (data && data.onDeleteEdge) data.onDeleteEdge(id);
+  }, [data && data.onDeleteEdge, id]);
 
   const toggleMenu = useCallback((e) => {
     e.stopPropagation();
@@ -216,9 +204,7 @@ export default function OrthogonalEdge({
           ...((data && data.labelStyle) || {}),
         }}
         labelShowBg={!!label}
-        labelBgStyle={{
-          fill: cfg.edgeLabelBackground,
-        }}
+        labelBgStyle={{ fill: cfg.edgeLabelBackground }}
         labelBgPadding={[2, 4]}
         labelBgBorderRadius={2}
       />

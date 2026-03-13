@@ -1,11 +1,12 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
+import DataMenu from './DataMenu.jsx';
 
 /**
  * Small "+" button that appears at the bottom-center of a node.
  * Clicking it shows a dropdown with app-provided menu content.
  *
  * Props:
- *   renderMenu  - () => ReactElement|null — app provides the dropdown content.
+ *   renderMenu  - () => menuConfig|null — app provides the menu config.
  *                 If renderMenu is not provided or returns null, nothing is rendered.
  */
 const AddNodeMenu = memo(function AddNodeMenu({ renderMenu }) {
@@ -14,11 +15,11 @@ const AddNodeMenu = memo(function AddNodeMenu({ renderMenu }) {
 
   useEffect(() => {
     if (!open) return;
-    function handleClick(e) {
+    const handleClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpen(false);
       }
-    }
+    };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
@@ -30,8 +31,8 @@ const AddNodeMenu = memo(function AddNodeMenu({ renderMenu }) {
 
   if (!renderMenu) return null;
 
-  const content = renderMenu();
-  if (!content) return null;
+  const menuConfig = renderMenu();
+  if (!menuConfig) return null;
 
   return (
     <div
@@ -72,9 +73,9 @@ const AddNodeMenu = memo(function AddNodeMenu({ renderMenu }) {
             zIndex: 20,
             minWidth: 140,
           }}
-          onClick={() => setOpen(false)}
+          onClick={(e) => e.stopPropagation()}
         >
-          {content}
+          <DataMenu menuConfig={menuConfig} onClose={() => setOpen(false)} />
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
+import DataMenu from './DataMenu.jsx';
 import './nodeShell.css';
 
 /**
@@ -13,7 +14,7 @@ import './nodeShell.css';
  * Props via data:
  *   parentId       - ID of the parent node
  *   size           - diameter in px
- *   renderMenu     - () => ReactElement|null
+ *   renderMenu     - () => menuConfig|null
  *   onHoverParent  - (parentId) => void
  *   onUnhoverParent - () => void
  */
@@ -25,13 +26,13 @@ const ActionNode = memo(function ActionNode({ data }) {
   // Close menu when clicking outside
   useEffect(() => {
     if (!menuOpen) return;
-    function handleClick(e) {
+    const handleOutsideClick = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setMenuOpen(false);
       }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [menuOpen]);
 
   const handleClick = useCallback((e) => {
@@ -47,15 +48,13 @@ const ActionNode = memo(function ActionNode({ data }) {
     if (onUnhoverParent) onUnhoverParent();
   }, [onUnhoverParent]);
 
-  const sizeStyle = { width: size, height: size };
-
-  const menuContent = renderMenu ? renderMenu() : null;
+  const menuConfig = renderMenu ? renderMenu() : null;
 
   return (
     <div
       ref={wrapperRef}
       className="eq-pipeline-compact-action-node"
-      style={sizeStyle}
+      style={{ width: size, height: size }}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -79,12 +78,12 @@ const ActionNode = memo(function ActionNode({ data }) {
       />
 
       {/* Dropdown menu */}
-      {menuOpen && menuContent && (
+      {menuOpen && menuConfig && (
         <div
           className="eq-pipeline-compact-action-menu"
-          onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {menuContent}
+          <DataMenu menuConfig={menuConfig} onClose={() => setMenuOpen(false)} />
         </div>
       )}
     </div>

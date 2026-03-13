@@ -1,4 +1,5 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
+import DataMenu from './DataMenu.jsx';
 
 /**
  * Reusable action button with popup dropdown for node custom actions.
@@ -11,7 +12,7 @@ import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
  *   menuClassName - CSS class for the dropdown
  *   style         - inline style for trigger button
  *   menuStyle     - inline style for dropdown
- *   children      - dropdown content (rendered when open)
+ *   menuConfig    - { items?, fetchItems?, loadingComponent? } — menu data config
  */
 const NodeActionButton = memo(function NodeActionButton({
   icon,
@@ -20,18 +21,18 @@ const NodeActionButton = memo(function NodeActionButton({
   menuClassName,
   style,
   menuStyle,
-  children,
+  menuConfig,
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
-    function handleClick(e) {
+    const handleClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpen(false);
       }
-    }
+    };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
@@ -51,13 +52,13 @@ const NodeActionButton = memo(function NodeActionButton({
       >
         {icon || '\u22EF'}
       </button>
-      {open && (
+      {open && menuConfig && (
         <div
           className={menuClassName || 'eq-pipeline-compact-action-menu'}
           style={menuStyle}
-          onClick={() => setOpen(false)}
+          onClick={(e) => e.stopPropagation()}
         >
-          {children}
+          <DataMenu menuConfig={menuConfig} onClose={() => setOpen(false)} />
         </div>
       )}
     </div>
