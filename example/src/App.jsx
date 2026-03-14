@@ -248,9 +248,9 @@ export default function App() {
 
     // Change node type callback (passed via nodeCallbacks)
     const handleChangeType = useCallback((nodeId, newType) => {
-        setNodes((nds) => nds.map((n) =>
-            n.id === nodeId ? { ...n, type: newType } : n
-        ));
+        setNodes((nds) =>
+            nds.map((n) => (n.id === nodeId ? { ...n, type: newType } : n)),
+        );
     }, []);
 
     // Factory: app decides IDs, labels, structure for new nodes
@@ -427,7 +427,7 @@ export default function App() {
     const renderNodeMenu = useCallback(
         (nodeId) => {
             const node = flowApi.getNodes?.()?.find((n) => n.id === nodeId);
-            if (node?.data?.isMerge || node?.id === "end") return null;
+            if (node?.id === "end") return null;
             return (
                 <div>
                     <div style={sectionHeaderStyle}>Add new</div>
@@ -504,7 +504,7 @@ export default function App() {
                 renderEdgeMenu={renderEdgeMenu}
                 nodeCallbacks={{
                     onChangeType: handleChangeType,
-                    availableTypes: ['square', 'branch'],
+                    availableTypes: ["square", "branch"],
                 }}
                 nodeTypes={nodeTypes}
                 autoLayout={true}

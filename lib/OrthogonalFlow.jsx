@@ -13,6 +13,7 @@ import ActionNode from "./ActionNode.jsx";
 import EdgeRoutingProvider from "./EdgeRoutingProvider.jsx";
 import { getVisibleGraph } from "./layoutEngine.js";
 import { DEFAULTS, resolveNodeX, resolveNodeY } from "./defaults.js";
+import { removeDanglingEdges, reindexAllHandles } from "./graphUtils.js";
 import {
     toggleCollapse,
     addNode,
@@ -111,11 +112,21 @@ function OrthogonalFlowInner({
 }) {
     const reactFlowInstance = useReactFlow();
 
+    // Sanitize edges: remove dangling edges, then reindex ports
+    const cleanEdges = useMemo(
+        () => removeDanglingEdges(nodes, edges),
+        [nodes, edges],
+    );
+    const sanitizedEdges = useMemo(
+        () => reindexAllHandles(cleanEdges),
+        [cleanEdges],
+    );
+
     // Refs to always access latest state from callbacks
     const nodesRef = useRef(nodes);
     nodesRef.current = nodes;
-    const edgesRef = useRef(edges);
-    edgesRef.current = edges;
+    const edgesRef = useRef(sanitizedEdges);
+    edgesRef.current = sanitizedEdges;
 
     // Stable refs for callbacks to avoid stale closure issues
     const onCreateNodeRef = useRef(onCreateNode);
@@ -308,7 +319,7 @@ function OrthogonalFlowInner({
                 : n;
         });
 
-        const { visibleNodes: vn, visibleEdges: ve } = getVisibleGraph(withCallbacks, edges);
+        const { visibleNodes: vn, visibleEdges: ve } = getVisibleGraph(withCallbacks, sanitizedEdges);
 
         // Derive inputs/outputs counts from visible edges
         const outputCounts = new Map();
@@ -350,7 +361,7 @@ function OrthogonalFlowInner({
             visibleNodes: finalNodes.concat(actionNodes),
             visibleEdges: edgesWithCallbacks.concat(actionEdges),
         };
-    }, [nodes, edges, onToggleCollapse, handleDeleteEdge, handleDeleteNode, handleLabelChange, hoveredNodeId, config, onHoverParent, onUnhoverParent]);
+    }, [nodes, sanitizedEdges, onToggleCollapse, handleDeleteEdge, handleDeleteNode, handleLabelChange, hoveredNodeId, config, onHoverParent, onUnhoverParent]);
 
     // --- ReactFlow event handlers ---
     const onNodesChange = useCallback((changes) => {
