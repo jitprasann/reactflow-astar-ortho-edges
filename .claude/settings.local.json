@@ -14,7 +14,8 @@
       "Bash(powershell -Command \"Get-ChildItem ''D:\\\\Projects\\\\orthogonal\\\\example\\\\node_modules\\\\@dagrejs\\\\dagre'' | Select-Object -First 5 -ExpandProperty Name\")",
       "Bash(powershell -Command \"Get-Content ''D:\\\\Projects\\\\orthogonal\\\\example\\\\node_modules\\\\@dagrejs\\\\dagre\\\\package.json'' | Select-String ''\"\"main\"\"|\"\"module\"\"|\"\"exports\"\"|\"\"version\"\"''\")",
       "Bash(powershell -Command:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

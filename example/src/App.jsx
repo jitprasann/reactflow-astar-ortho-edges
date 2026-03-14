@@ -329,6 +329,25 @@ export default function App() {
                 ],
             };
         }
+        if (type === "condition") {
+            const condId = nextId("cond");
+            const newEdges = [
+                { id: nextId("e"), source: parentId, target: condId, data: { label: "Condition" } },
+            ];
+            if (context && context.mergeNodeId) {
+                newEdges.push({ id: nextId("e"), source: condId, target: context.mergeNodeId });
+            }
+            return {
+                nodes: [
+                    {
+                        id: condId,
+                        type: "square",
+                        data: { label: nextNodeLabel(), width: 80, height: 80 },
+                    },
+                ],
+                edges: newEdges,
+            };
+        }
     }, []);
 
     // Factory: app decides IDs, labels for inline node insertion
@@ -426,8 +445,10 @@ export default function App() {
     // App-controlled menu CONTENT for node "+" button
     const renderNodeMenu = useCallback(
         (nodeId) => {
-            const node = flowApi.getNodes?.()?.find((n) => n.id === nodeId);
-            if (node?.id === "end") return null;
+            var allNodes = flowApi.getNodes && flowApi.getNodes();
+            var node = allNodes && allNodes.find(function (n) { return n.id === nodeId; });
+            if (node && node.id === "end") return null;
+            var isBranch = node && node.data && node.data.isBranch;
             return (
                 <div>
                     <div style={sectionHeaderStyle}>Add new</div>
@@ -440,6 +461,14 @@ export default function App() {
                     >
                         Add Branch
                     </MenuItem>
+                    {isBranch && (
+                        <MenuItem
+                            onClick={() => flowApi.addNode(nodeId, "condition")}
+                            style={{ borderTop: "1px solid #eee" }}
+                        >
+                            Add Condition
+                        </MenuItem>
+                    )}
                     <div
                         style={{ borderTop: "2px solid #eee", marginTop: 2 }}
                     />
@@ -447,7 +476,7 @@ export default function App() {
                     {flowApi.getNodes &&
                         flowApi
                             .getNodes()
-                            .filter((n) => n.id !== nodeId && !n.data?.isMerge)
+                            .filter(function (n) { return n.id !== nodeId && !(n.data && n.data.isMerge); })
                             .map((n) => (
                                 <MenuItem
                                     key={n.id}
@@ -455,7 +484,7 @@ export default function App() {
                                         flowApi.connectNodes(nodeId, n.id)
                                     }
                                 >
-                                    {n.data?.label || n.id}
+                                    {(n.data && n.data.label) || n.id}
                                 </MenuItem>
                             ))}
                 </div>
