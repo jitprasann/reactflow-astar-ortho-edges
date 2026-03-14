@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
-import DataMenu from './DataMenu.jsx';
+import { DataMenuAsync } from './DataMenu.jsx';
 
 /**
  * Reusable action button with popup dropdown for node custom actions.
@@ -58,7 +58,7 @@ const NodeActionButton = memo(function NodeActionButton({
           style={menuStyle}
           onClick={(e) => e.stopPropagation()}
         >
-          <DataMenu menuConfig={menuConfig} onClose={() => setOpen(false)} />
+          <DataMenuAsync menuConfig={menuConfig} onClose={() => setOpen(false)} />
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@ import { BaseEdge, EdgeLabelRenderer, useNodes } from 'reactflow';
 import { computeOrthogonalPath, waypointsToSvgPath } from './orthogonalRouter.js';
 import { DEFAULTS, resolveNodeX, resolveNodeY, resolveNodeWidth, resolveNodeHeight } from './defaults.js';
 import { useEdgeRouting } from './EdgeRoutingProvider.jsx';
-import DataMenu from './DataMenu.jsx';
+import { DataMenuAsync } from './DataMenu.jsx';
 import './orthogonalEdge.css';
 
 /**
@@ -105,7 +105,7 @@ const renderEdgeToolbar = (data, id, mid, hasEdgeMenu, menuOpen, handlers) => {
                   onMouseLeave={onMouseLeave}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <DataMenu menuConfig={edgeMenuContent} onClose={() => setMenuOpen(false)} />
+                  <DataMenuAsync menuConfig={edgeMenuContent} onClose={() => setMenuOpen(false)} />
                 </div>
               )}
             </div>

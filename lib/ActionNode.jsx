@@ -1,6 +1,6 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
-import DataMenu from './DataMenu.jsx';
+import { DataMenuAsync } from './DataMenu.jsx';
 import './nodeShell.css';
 
 /**
@@ -83,7 +83,7 @@ const ActionNode = memo(function ActionNode({ data }) {
           className="eq-pipeline-compact-action-menu"
           onClick={(e) => e.stopPropagation()}
         >
-          <DataMenu menuConfig={menuConfig} onClose={() => setMenuOpen(false)} />
+          <DataMenuAsync menuConfig={menuConfig} onClose={() => setMenuOpen(false)} />
         </div>
       )}
     </div>

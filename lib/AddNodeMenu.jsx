@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
-import DataMenu from './DataMenu.jsx';
+import { DataMenuAsync } from './DataMenu.jsx';
 
 /**
  * Small "+" button that appears at the bottom-center of a node.
@@ -75,7 +75,7 @@ const AddNodeMenu = memo(function AddNodeMenu({ renderMenu }) {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <DataMenu menuConfig={menuConfig} onClose={() => setOpen(false)} />
+          <DataMenuAsync menuConfig={menuConfig} onClose={() => setOpen(false)} />
         </div>
       )}
     </div>

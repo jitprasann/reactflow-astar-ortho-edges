@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
+import useMenuConfig from './useMenuConfig.js';
 import './dataMenu.css';
 
 /**
- * Generic data-driven menu component.
+ * Generic data-driven menu component (presentational).
  *
  * Props:
  *   menuConfig shape:
  *     items?           - MenuItem[]              — ungrouped items rendered first
  *     sections?        - Section[]               — grouped sections rendered after items
- *     fetchItems?      - () => Promise<{ items?, sections? }>  — async data source
+ *     loading?         - boolean                 — show loading indicator
  *     loadingComponent - ReactElement            — custom spinner replacement
  *
  *   Section  shape: { name: string, items: MenuItem[] }
@@ -17,20 +18,10 @@ import './dataMenu.css';
  *   onClose - () => void — called when an item is clicked
  */
 export default function DataMenu({ menuConfig, onClose }) {
-  const [items, setItems] = useState(menuConfig.items || []);
-  const [sections, setSections] = useState(menuConfig.sections || []);
-  const [loading, setLoading] = useState(false);
+  const items = menuConfig.items || [];
+  const sections = menuConfig.sections || [];
+  const loading = menuConfig.loading || false;
   const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    if (!menuConfig.fetchItems) return;
-    setLoading(true);
-    menuConfig.fetchItems().then((result) => {
-      if (result.items) setItems(result.items);
-      if (result.sections) setSections(result.sections);
-      setLoading(false);
-    });
-  }, [menuConfig.fetchItems]);
 
   const handleItemClick = useCallback((item) => {
     if (item.onClick) item.onClick();
@@ -111,4 +102,15 @@ export default function DataMenu({ menuConfig, onClose }) {
       </div>
     </div>
   );
+}
+
+/**
+ * DataMenuAsync — resolves fetchItems via useMenuConfig, then renders DataMenu.
+ *
+ * Use this when menuConfig may contain fetchItems.
+ * DataMenu itself is now purely presentational.
+ */
+export function DataMenuAsync({ menuConfig, onClose }) {
+  const resolved = useMenuConfig(menuConfig);
+  return <DataMenu menuConfig={resolved} onClose={onClose} />;
 }
