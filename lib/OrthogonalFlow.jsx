@@ -38,6 +38,8 @@ function buildActionNodesAndEdges(finalNodes, outputCounts, hoveredNodeId, rende
         const menuContent = renderNodeMenuRef.current(n.id);
         if (!menuContent) continue;
 
+        const isDirectAction = menuContent && typeof menuContent === 'object' && typeof menuContent.onClick === 'function';
+
         const isConnected = (outputCounts.get(n.id) || 0) > 0;
         const pw = (n.data && n.data.width) || cfg.nodeWidth;
         const ph = (n.data && n.data.height) || cfg.nodeHeight;
@@ -58,7 +60,8 @@ function buildActionNodesAndEdges(finalNodes, outputCounts, hoveredNodeId, rende
             data: {
                 parentId: n.id,
                 size,
-                renderMenu: () => menuContent,
+                renderMenu: isDirectAction ? undefined : () => menuContent,
+                onDirectClick: isDirectAction ? menuContent.onClick : undefined,
                 onHoverParent,
                 onUnhoverParent,
             },

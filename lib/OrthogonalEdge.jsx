@@ -198,8 +198,15 @@ export default function OrthogonalEdge({
 
   const toggleMenu = useCallback((e) => {
     e.stopPropagation();
+    if (data && data.renderEdgeMenu) {
+      var content = data.renderEdgeMenu();
+      if (content && typeof content === 'object' && typeof content.onClick === 'function') {
+        content.onClick();
+        return;
+      }
+    }
     setMenuOpen((v) => !v);
-  }, []);
+  }, [data]);
 
   return (
     <g className="eq-pipeline-compact-edge">

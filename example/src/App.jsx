@@ -449,6 +449,9 @@ export default function App() {
             var node = allNodes && allNodes.find(function (n) { return n.id === nodeId; });
             if (node && node.id === "end") return null;
             var isBranch = node && node.data && node.data.isBranch;
+            if (isBranch) {
+                return { onClick: function() { flowApi.addNode(nodeId, "condition"); } };
+            }
             return (
                 <div>
                     <div style={sectionHeaderStyle}>Add new</div>
@@ -461,14 +464,6 @@ export default function App() {
                     >
                         Add Branch
                     </MenuItem>
-                    {isBranch && (
-                        <MenuItem
-                            onClick={() => flowApi.addNode(nodeId, "condition")}
-                            style={{ borderTop: "1px solid #eee" }}
-                        >
-                            Add Condition
-                        </MenuItem>
-                    )}
                     <div
                         style={{ borderTop: "2px solid #eee", marginTop: 2 }}
                     />
@@ -495,20 +490,27 @@ export default function App() {
 
     // App-controlled menu CONTENT for edge "+" button
     const renderEdgeMenu = useCallback(
-        (edgeId, sourceId, targetId) => (
-            <div>
-                <div style={sectionHeaderStyle}>Insert between</div>
-                <MenuItem onClick={() => flowApi.addNodeInline(edgeId, "node")}>
-                    Add Node
-                </MenuItem>
-                <MenuItem
-                    onClick={() => flowApi.addNodeInline(edgeId, "branch")}
-                    style={{ borderTop: "1px solid #eee" }}
-                >
-                    Add Branch
-                </MenuItem>
-            </div>
-        ),
+        (edgeId, sourceId, targetId) => {
+            var allNodes = flowApi.getNodes && flowApi.getNodes();
+            var sourceNode = allNodes && allNodes.find(function (n) { return n.id === sourceId; });
+            if (sourceNode && sourceNode.data && sourceNode.data.isBranch) {
+                return { onClick: function() { flowApi.addNodeInline(edgeId, "node"); } };
+            }
+            return (
+                <div>
+                    <div style={sectionHeaderStyle}>Insert between</div>
+                    <MenuItem onClick={() => flowApi.addNodeInline(edgeId, "node")}>
+                        Add Node
+                    </MenuItem>
+                    <MenuItem
+                        onClick={() => flowApi.addNodeInline(edgeId, "branch")}
+                        style={{ borderTop: "1px solid #eee" }}
+                    >
+                        Add Branch
+                    </MenuItem>
+                </div>
+            );
+        },
         [flowApi],
     );
 

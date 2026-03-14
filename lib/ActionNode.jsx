@@ -18,7 +18,7 @@ import './nodeShell.css';
  *   onUnhoverParent - () => void
  */
 const ActionNode = memo(function ActionNode({ data }) {
-  const { parentId, size = 24, renderMenu, onHoverParent, onUnhoverParent } = data;
+  const { parentId, size = 24, renderMenu, onDirectClick, onHoverParent, onUnhoverParent } = data;
   const [menuOpen, setMenuOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -36,8 +36,12 @@ const ActionNode = memo(function ActionNode({ data }) {
 
   const handleClick = useCallback((e) => {
     e.stopPropagation();
+    if (onDirectClick) {
+      onDirectClick();
+      return;
+    }
     setMenuOpen((o) => !o);
-  }, []);
+  }, [onDirectClick]);
 
   const handleMouseEnter = useCallback(() => {
     if (onHoverParent) onHoverParent(parentId);
