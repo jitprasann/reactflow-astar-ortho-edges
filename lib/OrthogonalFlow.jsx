@@ -104,6 +104,7 @@ function OrthogonalFlowInner({
     onDeleteEdge: onDeleteEdgeProp,
     renderNodeMenu,
     renderEdgeMenu,
+    edgeToolbar,
     nodeCallbacks,
     api,
     config,
@@ -148,6 +149,8 @@ function OrthogonalFlowInner({
     renderNodeMenuRef.current = renderNodeMenu;
     const renderEdgeMenuRef = useRef(renderEdgeMenu);
     renderEdgeMenuRef.current = renderEdgeMenu;
+    const edgeToolbarRef = useRef(edgeToolbar);
+    edgeToolbarRef.current = edgeToolbar;
     const appOnNodesChangeRef = useRef(appOnNodesChange);
     appOnNodesChangeRef.current = appOnNodesChange;
     const appOnEdgesChangeRef = useRef(appOnEdgesChange);
@@ -352,6 +355,7 @@ function OrthogonalFlowInner({
                 renderEdgeMenu: renderEdgeMenuRef.current
                     ? () => renderEdgeMenuRef.current(e.id, e.source, e.target)
                     : undefined,
+                _edgeToolbarConfig: edgeToolbarRef.current,
             },
         }));
 

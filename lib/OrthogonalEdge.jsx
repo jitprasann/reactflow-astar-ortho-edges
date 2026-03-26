@@ -75,7 +75,19 @@ function resolveLabelContent(data, label) {
   return label;
 }
 
+function resolveToolbarButton(buttonName, data, fallback) {
+  var perEdge = (data && data.edgeToolbar && data.edgeToolbar[buttonName]) || {};
+  var global = (data && data._edgeToolbarConfig && data._edgeToolbarConfig[buttonName]) || {};
+  return {
+    label: perEdge.label != null ? perEdge.label : (global.label != null ? global.label : fallback.label),
+    title: perEdge.title != null ? perEdge.title : (global.title != null ? global.title : fallback.title),
+    hidden: perEdge.hidden != null ? perEdge.hidden : (global.hidden != null ? global.hidden : false),
+  };
+}
+
 function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
+  var addBtn = resolveToolbarButton('addButton', data, { label: '+', title: 'Add node here' });
+  var delBtn = resolveToolbarButton('deleteButton', data, { label: '\u00d7', title: 'Delete edge' });
   return (
     <EdgeLabelRenderer>
       <div
@@ -90,14 +102,14 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
       >
         <div className="eq-pipeline-canvas-edge-toolbar">
           {/* Inline add button — only when app provides renderEdgeMenu */}
-          {hasEdgeMenu && (
+          {hasEdgeMenu && !addBtn.hidden && (
             <div style={{ position: 'relative' }}>
               <button
                 onClick={handlers.toggleMenu}
                 className="eq-pipeline-canvas-edge-toolbar-btn"
-                title="Add node here"
+                title={addBtn.title}
               >
-                +
+                {addBtn.label}
               </button>
               {menuOpen && (
                 <div
@@ -113,14 +125,14 @@ function renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, handlers) {
           )}
 
           {/* Delete button */}
-          {data && data.onDeleteEdge && (
+          {data && data.onDeleteEdge && !delBtn.hidden && (
             (data && data.deleteButton) || (
               <button
                 onClick={handlers.handleDelete}
                 className="eq-pipeline-canvas-edge-toolbar-btn"
-                title="Delete edge"
+                title={delBtn.title}
               >
-                ×
+                {delBtn.label}
               </button>
             )
           )}
@@ -186,7 +198,11 @@ export default function OrthogonalEdge({
   // --- Midpoint toolbar (delete + inline add) ---
   const mid = (hovered || selected) ? pathMidpoint(edgePoints) : null;
   const hasEdgeMenu = !!(data && data.renderEdgeMenu);
-  const showToolbar = !!(mid && ((data && data.onDeleteEdge) || hasEdgeMenu));
+  var _addResolved = resolveToolbarButton('addButton', data, { label: '+', title: 'Add node here' });
+  var _delResolved = resolveToolbarButton('deleteButton', data, { label: '\u00d7', title: 'Delete edge' });
+  var hasVisibleAdd = hasEdgeMenu && !_addResolved.hidden;
+  var hasVisibleDelete = !!(data && data.onDeleteEdge) && !_delResolved.hidden;
+  const showToolbar = !!(mid && (hasVisibleDelete || hasVisibleAdd));
 
   const handleDelete = useCallback(
     (e) => {
