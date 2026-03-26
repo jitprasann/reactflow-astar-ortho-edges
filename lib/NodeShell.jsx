@@ -41,6 +41,7 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
   }, [inputs, outputs, id, updateNodeInternals]);
 
   const label = data.label || '';
+  var labelEditable = data.editable != null ? data.editable : true;
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(label);
@@ -115,7 +116,7 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             pointerEvents: editing ? 'all' : 'auto',
           }}
           onDoubleClick={() => {
-            if (data && data.onLabelChange) {
+            if (labelEditable && data && data.onLabelChange) {
               setDraft(label);
               setEditing(true);
             }

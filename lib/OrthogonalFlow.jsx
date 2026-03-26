@@ -102,6 +102,7 @@ function OrthogonalFlowInner({
     onConnectNodes,
     onDeleteNode: onDeleteNodeProp,
     onDeleteEdge: onDeleteEdgeProp,
+    onLabelChange: onLabelChangeProp,
     renderNodeMenu,
     renderEdgeMenu,
     edgeToolbar,
@@ -143,6 +144,8 @@ function OrthogonalFlowInner({
     onDeleteNodeRef.current = onDeleteNodeProp;
     const onDeleteEdgeRef = useRef(onDeleteEdgeProp);
     onDeleteEdgeRef.current = onDeleteEdgeProp;
+    const onLabelChangeRef = useRef(onLabelChangeProp);
+    onLabelChangeRef.current = onLabelChangeProp;
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
     const renderNodeMenuRef = useRef(renderNodeMenu);
@@ -274,8 +277,17 @@ function OrthogonalFlowInner({
     }, [fireChange]);
 
     const handleLabelChange = useCallback((nodeId, newLabel) => {
+        var finalLabel = newLabel;
+        if (onLabelChangeRef.current) {
+            var result = onLabelChangeRef.current(nodeId, newLabel, {
+                nodes: nodesRef.current,
+                edges: edgesRef.current,
+            });
+            if (result == null) return;
+            finalLabel = result;
+        }
         const updatedNodes = nodesRef.current.map((n) =>
-            n.id === nodeId ? { ...n, data: { ...n.data, label: newLabel } } : n
+            n.id === nodeId ? { ...n, data: { ...n.data, label: finalLabel } } : n
         );
         fireChange(updatedNodes, edgesRef.current);
     }, [fireChange]);
