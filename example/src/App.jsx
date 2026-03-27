@@ -4,7 +4,6 @@ import {
     useOrthogonalFlow,
     Controls,
     Background,
-    layoutGraphDagre,
     applyNodeChanges,
     applyEdgeChanges,
     cascadeDeleteNode,
@@ -33,123 +32,47 @@ function nextNodeLabel() {
     return `Node ${++nodeCounter}`;
 }
 
-// --- Initial graph data ---
-// No explicit handles — the library assigns them on first render.
-const rawNodes = [
+// --- Initial graph data (backup — full branch example) ---
+// const rawNodesBackup = [
+//     { id: "start", type: "square", position: { x: 0, y: 0 }, data: { label: "Start", width: 80, height: 80 } },
+//     { id: "branch1", type: "branch", position: { x: 0, y: 0 }, data: { label: "Branch", isBranch: true, width: 80, height: 80 } },
+//     { id: "if-node", type: "square", position: { x: 0, y: 0 }, data: { label: "If Path", width: 80, height: 80 } },
+//     { id: "elseif-node", type: "square", position: { x: 0, y: 0 }, data: { label: "Else-If Path", width: 80, height: 80 } },
+//     { id: "else-node", type: "square", position: { x: 0, y: 0 }, data: { label: "Else Path", width: 80, height: 80 } },
+//     { id: "merge1", type: "merge", position: { x: 0, y: 0 }, data: { label: "", isMerge: true, width: 40, height: 40 } },
+//     { id: "end", type: "square", position: { x: 0, y: 0 }, data: { label: "End", width: 80, height: 80 } },
+// ];
+// const rawEdgesBackup = [
+//     { id: "e-start-branch", source: "start", sourceHandle: "output-0", target: "branch1", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" } },
+//     { id: "e-branch-if", source: "branch1", sourceHandle: "output-0", target: "if-node", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" }, data: { label: "If" } },
+//     { id: "e-branch-elseif", source: "branch1", sourceHandle: "output-1", target: "elseif-node", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" }, data: { label: "Else If" } },
+//     { id: "e-branch-else", source: "branch1", sourceHandle: "output-2", target: "else-node", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" }, data: { label: "Else" } },
+//     { id: "e-if-merge", source: "if-node", sourceHandle: "output-0", target: "merge1", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" } },
+//     { id: "e-elseif-merge", source: "elseif-node", sourceHandle: "output-0", target: "merge1", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" } },
+//     { id: "e-else-merge", source: "else-node", sourceHandle: "output-0", target: "merge1", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" } },
+//     { id: "e-merge-end", source: "merge1", sourceHandle: "output-0", target: "end", targetHandle: "input-0", type: "orthogonal", markerEnd: { type: "arrowclosed" } },
+// ];
+
+// --- Simple two-node graph ---
+const initialNodes = [
     {
         id: "start",
         type: "square",
-        position: { x: 0, y: 0 },
+        position: { x: 100, y: 100 },
         data: { label: "Start", width: 80, height: 80 },
-    },
-    {
-        id: "branch1",
-        type: "branch",
-        position: { x: 0, y: 0 },
-        data: { label: "Branch", isBranch: true, width: 80, height: 80 },
-    },
-    {
-        id: "if-node",
-        type: "square",
-        position: { x: 0, y: 0 },
-        data: { label: "If Path", width: 80, height: 80 },
-    },
-    {
-        id: "elseif-node",
-        type: "square",
-        position: { x: 0, y: 0 },
-        data: { label: "Else-If Path", width: 80, height: 80 },
-    },
-    {
-        id: "else-node",
-        type: "square",
-        position: { x: 0, y: 0 },
-        data: { label: "Else Path", width: 80, height: 80 },
-    },
-    {
-        id: "merge1",
-        type: "merge",
-        position: { x: 0, y: 0 },
-        data: { label: "", isMerge: true, width: 40, height: 40 },
     },
     {
         id: "end",
         type: "square",
-        position: { x: 0, y: 0 },
+        position: { x: 100, y: 260 },
         data: { label: "End", width: 80, height: 80 },
     },
 ];
 
-const rawEdges = [
+const initialEdges = [
     {
-        id: "e-start-branch",
+        id: "e-start-end",
         source: "start",
-        sourceHandle: "output-0",
-        target: "branch1",
-        targetHandle: "input-0",
-        type: "orthogonal",
-        markerEnd: { type: "arrowclosed" },
-    },
-    {
-        id: "e-branch-if",
-        source: "branch1",
-        sourceHandle: "output-0",
-        target: "if-node",
-        targetHandle: "input-0",
-        type: "orthogonal",
-        markerEnd: { type: "arrowclosed" },
-        data: { label: "If" },
-    },
-    {
-        id: "e-branch-elseif",
-        source: "branch1",
-        sourceHandle: "output-1",
-        target: "elseif-node",
-        targetHandle: "input-0",
-        type: "orthogonal",
-        markerEnd: { type: "arrowclosed" },
-        data: { label: "Else If" },
-    },
-    {
-        id: "e-branch-else",
-        source: "branch1",
-        sourceHandle: "output-2",
-        target: "else-node",
-        targetHandle: "input-0",
-        type: "orthogonal",
-        markerEnd: { type: "arrowclosed" },
-        data: { label: "Else" },
-    },
-    {
-        id: "e-if-merge",
-        source: "if-node",
-        sourceHandle: "output-0",
-        target: "merge1",
-        targetHandle: "input-0",
-        type: "orthogonal",
-        markerEnd: { type: "arrowclosed" },
-    },
-    {
-        id: "e-elseif-merge",
-        source: "elseif-node",
-        sourceHandle: "output-0",
-        target: "merge1",
-        targetHandle: "input-0",
-        type: "orthogonal",
-        markerEnd: { type: "arrowclosed" },
-    },
-    {
-        id: "e-else-merge",
-        source: "else-node",
-        sourceHandle: "output-0",
-        target: "merge1",
-        targetHandle: "input-0",
-        type: "orthogonal",
-        markerEnd: { type: "arrowclosed" },
-    },
-    {
-        id: "e-merge-end",
-        source: "merge1",
         sourceHandle: "output-0",
         target: "end",
         targetHandle: "input-0",
@@ -157,10 +80,6 @@ const rawEdges = [
         markerEnd: { type: "arrowclosed" },
     },
 ];
-
-// Pre-layout and inject handle counts for initial render
-const initialNodes = layoutGraphDagre(rawNodes, rawEdges);
-const initialEdges = rawEdges;
 
 // --- Menu styles ---
 const sectionHeaderStyle = {
@@ -253,14 +172,22 @@ export default function App() {
         );
     }, []);
 
+    // Helper: build a parent update node with child count in label
+    function parentWithChildCount(parentNode, newChildCount) {
+        var baseLabel = parentNode.data.label.split(" (")[0];
+        var label = baseLabel + " (" + newChildCount + " children)";
+        return {
+            id: parentNode.id,
+            data: { ...parentNode.data, label: label },
+        };
+    }
+
     // Factory: app decides IDs, labels, structure for new nodes
     const handleCreateNode = useCallback((parentId, type, context) => {
+        var childCount = context.existingOutputCount + 1;
+
         if (type === "node") {
             const nodeId = nextId("node");
-            const newEdges = [
-                { id: nextId("e"), source: parentId, target: nodeId },
-            ];
-
             return {
                 nodes: [
                     {
@@ -268,8 +195,11 @@ export default function App() {
                         type: "square",
                         data: { label: nextNodeLabel(), width: 80, height: 80 },
                     },
+                    parentWithChildCount(context.parentNode, childCount),
                 ],
-                edges: newEdges,
+                edges: [
+                    { id: nextId("e"), source: parentId, target: nodeId },
+                ],
             };
         }
         if (type === "branch") {
@@ -309,6 +239,7 @@ export default function App() {
                             height: 40,
                         },
                     },
+                    parentWithChildCount(context.parentNode, childCount),
                 ],
                 edges: [
                     { id: nextId("e"), source: parentId, target: bId },
@@ -344,6 +275,7 @@ export default function App() {
                         type: "square",
                         data: { label: nextNodeLabel(), width: 80, height: 80 },
                     },
+                    parentWithChildCount(context.parentNode, childCount),
                 ],
                 edges: newEdges,
             };
@@ -353,20 +285,31 @@ export default function App() {
     // Factory: app decides IDs, labels for inline node insertion
     const handleCreateNodeInline = useCallback(
         (edgeId, sourceId, targetId, type) => {
+            // Get source node to demonstrate updating existing nodes
+            var allNodes = flowApi.getNodes && flowApi.getNodes();
+            var allEdges = flowApi.getEdges && flowApi.getEdges();
+            var sourceNode = allNodes && allNodes.find(function (n) { return n.id === sourceId; });
+
             if (type === "node") {
                 const nodeId = nextId("node");
-                return {
-                    nodes: [
-                        {
-                            id: nodeId,
-                            type: "square",
-                            data: {
-                                label: nextNodeLabel(),
-                                width: 80,
-                                height: 80,
-                            },
+                var returnedNodes = [
+                    {
+                        id: nodeId,
+                        type: "square",
+                        data: {
+                            label: nextNodeLabel(),
+                            width: 80,
+                            height: 80,
                         },
-                    ],
+                    },
+                ];
+                // Update source node label with child count
+                if (sourceNode && allEdges) {
+                    var currentChildren = allEdges.filter(function (e) { return e.source === sourceId; }).length;
+                    returnedNodes.push(parentWithChildCount(sourceNode, currentChildren));
+                }
+                return {
+                    nodes: returnedNodes,
                     edges: [
                         { id: nextId("e"), source: sourceId, target: nodeId },
                         { id: nextId("e"), source: nodeId, target: targetId },
@@ -378,39 +321,44 @@ export default function App() {
                 const ifId = nextId("if");
                 const elseId = nextId("else");
                 const mId = nextId("merge");
+                var branchNodes = [
+                    {
+                        id: bId,
+                        type: "branch",
+                        data: {
+                            label: "Branch",
+                            isBranch: true,
+                            width: 80,
+                            height: 80,
+                        },
+                    },
+                    {
+                        id: ifId,
+                        type: "square",
+                        data: { label: "If", width: 80, height: 80 },
+                    },
+                    {
+                        id: elseId,
+                        type: "square",
+                        data: { label: "Else", width: 80, height: 80 },
+                    },
+                    {
+                        id: mId,
+                        type: "merge",
+                        data: {
+                            label: "",
+                            isMerge: true,
+                            width: 40,
+                            height: 40,
+                        },
+                    },
+                ];
+                if (sourceNode && allEdges) {
+                    var currentChildren = allEdges.filter(function (e) { return e.source === sourceId; }).length;
+                    branchNodes.push(parentWithChildCount(sourceNode, currentChildren));
+                }
                 return {
-                    nodes: [
-                        {
-                            id: bId,
-                            type: "branch",
-                            data: {
-                                label: "Branch",
-                                isBranch: true,
-                                width: 80,
-                                height: 80,
-                            },
-                        },
-                        {
-                            id: ifId,
-                            type: "square",
-                            data: { label: "If", width: 80, height: 80 },
-                        },
-                        {
-                            id: elseId,
-                            type: "square",
-                            data: { label: "Else", width: 80, height: 80 },
-                        },
-                        {
-                            id: mId,
-                            type: "merge",
-                            data: {
-                                label: "",
-                                isMerge: true,
-                                width: 40,
-                                height: 40,
-                            },
-                        },
-                    ],
+                    nodes: branchNodes,
                     edges: [
                         { id: nextId("e"), source: sourceId, target: bId },
                         {
@@ -432,7 +380,7 @@ export default function App() {
                 };
             }
         },
-        [],
+        [flowApi],
     );
 
     // Factory: app decides edge ID for connecting existing nodes
