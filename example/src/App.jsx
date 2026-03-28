@@ -118,6 +118,7 @@ function MenuItem({ onClick, children, style: extraStyle }) {
 export default function App() {
     const [nodes, setNodes] = useState(initialNodes);
     const [edges, setEdges] = useState(initialEdges);
+    const [readOnly, setReadOnly] = useState(false);
     const flowApi = useOrthogonalFlow();
 
     const handleChange = useCallback(({ nodes: n, edges: e }) => {
@@ -478,6 +479,9 @@ export default function App() {
         <div style={{ width: "100vw", height: "100vh" }}>
             <div className="controls-panel">
                 <button onClick={() => flowApi.layout()}>Re-Layout</button>
+                <button onClick={() => setReadOnly(function (v) { return !v; })}>
+                    {readOnly ? "Edit Mode" : "Read-Only"}
+                </button>
             </div>
             <OrthogonalFlow
                 api={flowApi}
@@ -486,20 +490,28 @@ export default function App() {
                 onChange={handleChange}
                 onNodesChange={handleNodesChange}
                 onEdgesChange={handleEdgesChange}
-                onCreateNode={handleCreateNode}
-                onCreateNodeInline={handleCreateNodeInline}
-                onConnectNodes={handleConnectNodes}
-                onDeleteNode={handleDeleteNode}
-                onDeleteEdge={handleDeleteEdge}
-                onLabelChange={handleLabelChange}
-                renderNodeMenu={renderNodeMenu}
-                renderEdgeMenu={renderEdgeMenu}
-                nodeCallbacks={{
+                onCreateNode={readOnly ? undefined : handleCreateNode}
+                onCreateNodeInline={readOnly ? undefined : handleCreateNodeInline}
+                onConnectNodes={readOnly ? undefined : handleConnectNodes}
+                onDeleteNode={readOnly ? undefined : handleDeleteNode}
+                onDeleteEdge={readOnly ? undefined : handleDeleteEdge}
+                onLabelChange={readOnly ? undefined : handleLabelChange}
+                renderNodeMenu={readOnly ? undefined : renderNodeMenu}
+                renderEdgeMenu={readOnly ? undefined : renderEdgeMenu}
+                deleteKeyCode={readOnly ? null : "Delete"}
+                edgeToolbar={readOnly ? {
+                    deleteButton: { hidden: true },
+                    addButton: { hidden: true },
+                } : undefined}
+                nodeCallbacks={readOnly ? { hideDeleteButton: true } : {
                     onChangeType: handleChangeType,
                     availableTypes: ["square", "branch"],
                 }}
                 nodeTypes={nodeTypes}
                 autoLayout={true}
+                elementsSelectable={!readOnly}
+                nodesConnectable={!readOnly}
+                nodesDraggable={!readOnly}
             >
                 <Controls />
                 <Background />

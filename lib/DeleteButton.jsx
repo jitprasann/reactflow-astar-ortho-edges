@@ -17,7 +17,7 @@ const DeleteButton = memo(function DeleteButton({ nodeId, data, icon, className,
     if (data && data.onDeleteNode) data.onDeleteNode(nodeId);
   }, [nodeId, data]);
 
-  if (!data || !data.onDeleteNode) return null;
+  if (!data || !data.onDeleteNode || data.hideDeleteButton) return null;
 
   return (
     <button

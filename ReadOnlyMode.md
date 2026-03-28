@@ -1,10 +1,8 @@
 # Read-Only Mode
 
-OrthogonalFlow supports a fully read-only mode without any library changes. All interactive elements self-suppress when their corresponding callback prop is omitted.
+OrthogonalFlow supports a fully read-only mode. All interactive elements self-suppress when their corresponding callback prop is omitted or configured to hide.
 
-## Usage
-
-Pass only the display props — omit all interaction callbacks:
+## Full Read-Only Example
 
 ```jsx
 <OrthogonalFlow
@@ -14,6 +12,12 @@ Pass only the display props — omit all interaction callbacks:
     onChange={handleChange}
     onNodesChange={handleNodesChange}
     onEdgesChange={handleEdgesChange}
+    deleteKeyCode={null}
+    edgeToolbar={{
+        deleteButton: { hidden: true },
+        addButton: { hidden: true },
+    }}
+    nodeCallbacks={{ hideDeleteButton: true }}
     nodeTypes={nodeTypes}
 >
     <Controls />
@@ -23,24 +27,31 @@ Pass only the display props — omit all interaction callbacks:
 
 This gives you a pan/zoom-only graph with no editing capabilities.
 
-## Props to Omit
+## Props to Omit or Configure
+
+### Omit these props to disable their features
 
 | Prop | Interactive Element Disabled |
 |---|---|
 | `renderNodeMenu` | Node "+" button and dropdown menu |
 | `renderEdgeMenu` | Edge "+" button and dropdown menu |
-| `onDeleteNode` | Node delete "×" button |
-| `onDeleteEdge` | Edge delete "×" button |
 | `onLabelChange` | Double-click label editing |
 | `onCreateNode` | Child node creation |
 | `onCreateNodeInline` | Inline node insertion on edges |
 | `onConnectNodes` | Drag-to-connect between nodes |
-| `nodeCallbacks` | Collapse toggle, type change, and custom actions |
-| `edgeToolbar` | Edge toolbar configuration |
+
+### Set these props to hide delete UI
+
+| Prop | Value | Effect |
+|---|---|---|
+| `deleteKeyCode` | `null` | Disables keyboard deletion |
+| `edgeToolbar` | `{ deleteButton: { hidden: true } }` | Hides edge delete button |
+| `edgeToolbar` | `{ addButton: { hidden: true } }` | Hides edge add button |
+| `nodeCallbacks` | `{ hideDeleteButton: true }` | Hides node delete button |
 
 ## Selective Read-Only
 
-You can also selectively disable features. For example, allow collapsing but prevent editing:
+You can selectively disable features. For example, allow collapsing but prevent editing:
 
 ```jsx
 <OrthogonalFlow
@@ -50,7 +61,15 @@ You can also selectively disable features. For example, allow collapsing but pre
     onChange={handleChange}
     onNodesChange={handleNodesChange}
     onEdgesChange={handleEdgesChange}
-    nodeCallbacks={{ onToggleCollapse: handleCollapse }}
+    deleteKeyCode={null}
+    edgeToolbar={{
+        deleteButton: { hidden: true },
+        addButton: { hidden: true },
+    }}
+    nodeCallbacks={{
+        hideDeleteButton: true,
+        onToggleCollapse: handleCollapse,
+    }}
     nodeTypes={nodeTypes}
 >
     <Controls />
