@@ -165,6 +165,18 @@ export default function App() {
         [],
     );
 
+    // Label validation: reject duplicate labels
+    const handleLabelChange = useCallback((nodeId, newLabel, { nodes: ns }) => {
+        var duplicate = ns.some(function (n) {
+            return n.id !== nodeId && n.data && n.data.label === newLabel;
+        });
+        if (duplicate) {
+            alert("Label \"" + newLabel + "\" already exists. Please use a unique label.");
+            return null;
+        }
+        return newLabel;
+    }, []);
+
     // Change node type callback (passed via nodeCallbacks)
     const handleChangeType = useCallback((nodeId, newType) => {
         setNodes((nds) =>
@@ -479,6 +491,7 @@ export default function App() {
                 onConnectNodes={handleConnectNodes}
                 onDeleteNode={handleDeleteNode}
                 onDeleteEdge={handleDeleteEdge}
+                onLabelChange={handleLabelChange}
                 renderNodeMenu={renderNodeMenu}
                 renderEdgeMenu={renderEdgeMenu}
                 nodeCallbacks={{

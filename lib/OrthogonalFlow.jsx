@@ -103,6 +103,7 @@ function OrthogonalFlowInner({
     onDeleteNode: onDeleteNodeProp,
     onDeleteEdge: onDeleteEdgeProp,
     onLabelChange: onLabelChangeProp,
+    deleteKeyCode: deleteKeyCodeProp,
     renderNodeMenu,
     renderEdgeMenu,
     edgeToolbar,
@@ -510,7 +511,7 @@ function OrthogonalFlowInner({
                 onNodeMouseLeave={onNodeMouseLeave}
                 nodeTypes={mergedNodeTypes}
                 edgeTypes={mergedEdgeTypes}
-                deleteKeyCode="Delete"
+                deleteKeyCode={deleteKeyCodeProp !== undefined ? deleteKeyCodeProp : "Delete"}
                 {...rfProps}
             >
                 {children}
@@ -532,6 +533,7 @@ function OrthogonalFlowInner({
  *   onConnectNodes       - factory for connecting existing nodes
  *   onDeleteNode         - (nodeId, node, { nodes, edges }) => { nodes, edges } — custom node deletion
  *   onDeleteEdge         - (edgeId, edge, { nodes, edges }) => { nodes, edges } — custom edge deletion
+ *   deleteKeyCode        - key(s) for keyboard deletion (default: "Delete"). Use "Backspace", ["Delete","Backspace"], or null to disable
  *   renderNodeMenu       - (nodeId) => ReactElement — app provides menu content
  *   renderEdgeMenu       - (edgeId, sourceId, targetId) => ReactElement
  *   api                  - object from useOrthogonalFlow()

@@ -190,7 +190,7 @@ export default function OrthogonalEdge({
   if (label && edgePoints && edgePoints.length >= 2) {
     const last = edgePoints.length - 1;
     labelX = edgePoints[last].x;
-    labelY = edgePoints[last - 1].y + 16;
+    labelY = targetY - cfg.edgeLabelDistanceFromTarget;
   }
 
   const labelContent = resolveLabelContent(data, label);
