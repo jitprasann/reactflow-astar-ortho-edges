@@ -67,12 +67,26 @@ function computeFallbackEdgePath(nodes, source, target, sourceX, sourceY, target
   };
 }
 
-function resolveLabelContent(data, label) {
-  if (!label) return undefined;
-  if (data && data.labelClassName) {
-    return <span className={data.labelClassName}>{label}</span>;
-  }
-  return label;
+function renderEdgeLabel(label, labelX, labelY, data) {
+  if (!label || labelX == null || labelY == null) return null;
+  const labelClassName = (data && data.labelClassName) || '';
+  return (
+    <EdgeLabelRenderer>
+      <div
+        style={{
+          position: 'absolute',
+          transform: `translate(-50%, 0%) translate(${labelX}px,${labelY}px)`,
+          pointerEvents: 'auto',
+          cursor: 'default',
+          ...((data && data.labelStyle) || {}),
+        }}
+        className={`nodrag nopan eq-pipeline-edge-label${labelClassName ? ' ' + labelClassName : ''}`}
+        title={label}
+      >
+        {label}
+      </div>
+    </EdgeLabelRenderer>
+  );
 }
 
 function resolveToolbarButton(buttonName, data, fallback) {
@@ -193,8 +207,6 @@ export default function OrthogonalEdge({
     labelY = targetY - cfg.edgeLabelDistanceFromTarget;
   }
 
-  const labelContent = resolveLabelContent(data, label);
-
   // --- Midpoint toolbar (delete + inline add) ---
   const mid = (hovered || selected) ? pathMidpoint(edgePoints) : null;
   const hasEdgeMenu = !!(data && data.renderEdgeMenu);
@@ -231,19 +243,6 @@ export default function OrthogonalEdge({
         path={edgePath}
         markerEnd={markerEnd}
         style={style}
-        label={labelContent}
-        labelX={labelX}
-        labelY={labelY}
-        labelStyle={{
-          fontSize: cfg.edgeLabelFontSize,
-          ...((data && data.labelStyle) || {}),
-        }}
-        labelShowBg={!!label}
-        labelBgStyle={{
-          fill: cfg.edgeLabelBackground,
-        }}
-        labelBgPadding={[2, 4]}
-        labelBgBorderRadius={2}
       />
       {/* Wider invisible path for easier hover detection */}
       <path
@@ -254,6 +253,7 @@ export default function OrthogonalEdge({
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       />
+      {renderEdgeLabel(label, labelX, labelY, data)}
       {showToolbar && mid && renderEdgeToolbar(data, id, mid, hasEdgeMenu, menuOpen, { toggleMenu, handleDelete, onMouseEnter, onMouseLeave, setMenuOpen })}
     </g>
   );
