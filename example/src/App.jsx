@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
     OrthogonalFlow,
     useOrthogonalFlow,
@@ -156,7 +156,24 @@ export default function App() {
     const [nodes, setNodes] = useState(initial.nodes);
     const [edges, setEdges] = useState(initial.edges);
     const [readOnly, setReadOnly] = useState(false);
+    const [selectedNode, setSelectedNode] = useState(null);
+    const [panelInput, setPanelInput] = useState("");
     const flowApi = useOrthogonalFlow();
+
+    const handleSelectionChange = useCallback(function (params) {
+        var selectedNodes = params.nodes;
+        if (selectedNodes && selectedNodes.length === 1) {
+            setSelectedNode(function (prev) {
+                if (!prev || prev.id !== selectedNodes[0].id) {
+                    setPanelInput("");
+                }
+                return selectedNodes[0];
+            });
+        } else {
+            setSelectedNode(null);
+            setPanelInput("");
+        }
+    }, []);
 
     const handleSave = useCallback(
         function () {
@@ -664,10 +681,47 @@ export default function App() {
                 elementsSelectable={!readOnly}
                 nodesConnectable={!readOnly}
                 nodesDraggable={!readOnly}
+                onSelectionChange={handleSelectionChange}
             >
                 <Controls />
                 <Background />
             </OrthogonalFlow>
+            {selectedNode && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    width: 260,
+                    height: "100%",
+                    background: "#fff",
+                    borderLeft: "1px solid #ddd",
+                    padding: 16,
+                    boxSizing: "border-box",
+                    zIndex: 10,
+                    overflowY: "auto",
+                }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <strong>Node Details</strong>
+                        <button onClick={function () { setSelectedNode(null); }} style={{ border: "none", background: "none", cursor: "pointer", fontSize: 16 }}>x</button>
+                    </div>
+                    <div style={{ fontSize: 13, lineHeight: 1.8 }}>
+                        <div><strong>ID:</strong> {selectedNode.id}</div>
+                        <div><strong>Type:</strong> {selectedNode.type}</div>
+                        <div><strong>Label:</strong> {(selectedNode.data && selectedNode.data.label) || "—"}</div>
+                        <div><strong>Position:</strong> x={Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}</div>
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                        <strong style={{ fontSize: 13 }}>Test Input:</strong>
+                        <input
+                            type="text"
+                            value={panelInput}
+                            onChange={function (e) { setPanelInput(e.target.value); }}
+                            placeholder="Type something..."
+                            style={{ width: "100%", padding: "4px 8px", marginTop: 4, boxSizing: "border-box" }}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

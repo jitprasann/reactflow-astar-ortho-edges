@@ -116,6 +116,7 @@ function OrthogonalFlowInner({
     onDeleteEdge: onDeleteEdgeProp,
     onLabelChange: onLabelChangeProp,
     deleteKeyCode: deleteKeyCodeProp,
+    onSelectionChange: onSelectionChangeProp,
     renderNodeMenu,
     renderEdgeMenu,
     edgeToolbar,
@@ -129,6 +130,42 @@ function OrthogonalFlowInner({
     ...rfProps
 }) {
     const reactFlowInstance = useReactFlow();
+    var didDragRef = useRef(false);
+
+    var handleNodeDragStart = useCallback(function () {
+        didDragRef.current = false;
+        if (rfProps.onNodeDragStart) rfProps.onNodeDragStart.apply(null, arguments);
+    }, [rfProps.onNodeDragStart]);
+
+    var handleNodeDrag = useCallback(function () {
+        didDragRef.current = true;
+        if (rfProps.onNodeDrag) rfProps.onNodeDrag.apply(null, arguments);
+    }, [rfProps.onNodeDrag]);
+
+    var handleNodeDragStop = useCallback(function () {
+        if (rfProps.onNodeDragStop) rfProps.onNodeDragStop.apply(null, arguments);
+    }, [rfProps.onNodeDragStop]);
+
+    var lastSelectedNodeIdRef = useRef(null);
+
+    var handleNodeClick = useCallback(function (event, node) {
+        if (!didDragRef.current && onSelectionChangeProp) {
+            if (lastSelectedNodeIdRef.current !== node.id) {
+                lastSelectedNodeIdRef.current = node.id;
+                onSelectionChangeProp({ nodes: [node], edges: [] });
+            }
+        }
+        didDragRef.current = false;
+        if (rfProps.onNodeClick) rfProps.onNodeClick(event, node);
+    }, [onSelectionChangeProp, rfProps.onNodeClick]);
+
+    var handlePaneClick = useCallback(function () {
+        lastSelectedNodeIdRef.current = null;
+        if (onSelectionChangeProp) {
+            onSelectionChangeProp({ nodes: [], edges: [] });
+        }
+        if (rfProps.onPaneClick) rfProps.onPaneClick.apply(null, arguments);
+    }, [onSelectionChangeProp, rfProps.onPaneClick]);
 
     // Sanitize edges: remove dangling edges, then reindex ports
     const cleanEdges = useMemo(
@@ -566,6 +603,11 @@ function OrthogonalFlowInner({
                     {...rfProps}
                     defaultViewport={convertedDefaultViewport}
                     onMoveEnd={rfProps.zoomOnScroll !== false ? handleMoveEnd : rfProps.onMoveEnd}
+                    onNodeDragStart={handleNodeDragStart}
+                    onNodeDrag={handleNodeDrag}
+                    onNodeDragStop={handleNodeDragStop}
+                    onNodeClick={handleNodeClick}
+                    onPaneClick={handlePaneClick}
                 >
                     {children}
                 </ReactFlow>
