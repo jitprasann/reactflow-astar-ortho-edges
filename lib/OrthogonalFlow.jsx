@@ -570,9 +570,10 @@ function OrthogonalFlowInner({
 
     var zoomLevel = isControlledZoom ? zoomValueProp : internalZoom;
 
+    var rfZoom = sliderToRfZoom(zoomLevel);
     var convertedDefaultViewport = rawDefaultViewport
-        ? { x: rawDefaultViewport.x, y: rawDefaultViewport.y, zoom: sliderToRfZoom(zoomLevel) }
-        : undefined;
+        ? { x: rawDefaultViewport.x, y: rawDefaultViewport.y, zoom: rfZoom }
+        : (zoomValueProp != null ? { x: 0, y: 0, zoom: rfZoom } : undefined);
 
     const handleZoomSliderChange = useCallback(function (e) {
         var value = Number(e.target.value);
