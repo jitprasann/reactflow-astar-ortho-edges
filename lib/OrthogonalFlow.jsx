@@ -117,6 +117,9 @@ function OrthogonalFlowInner({
     onLabelChange: onLabelChangeProp,
     deleteKeyCode: deleteKeyCodeProp,
     onSelectionChange: onSelectionChangeProp,
+    zoomValue: zoomValueProp,
+    onZoomChange: onZoomChangeProp,
+    showZoom: showZoomProp,
     renderNodeMenu,
     renderEdgeMenu,
     edgeToolbar,
@@ -360,11 +363,12 @@ function OrthogonalFlowInner({
         api.getViewport = function () {
             if (!reactFlowInstance) return null;
             var vp = reactFlowInstance.getViewport();
-            return { x: vp.x, y: vp.y, zoom: rfZoomToSlider(vp.zoom) };
+            return { x: vp.x, y: vp.y };
         };
         api.setViewport = function (vp) {
             if (!reactFlowInstance || !vp) return;
-            reactFlowInstance.setViewport({ x: vp.x, y: vp.y, zoom: sliderToRfZoom(vp.zoom) });
+            var current = reactFlowInstance.getViewport();
+            reactFlowInstance.setViewport({ x: vp.x, y: vp.y, zoom: current.zoom });
         };
         api.getNodes = () => nodesRef.current;
         api.getEdges = () => edgesRef.current;
@@ -556,28 +560,36 @@ function OrthogonalFlowInner({
     }, [fireChange]);
 
     var rawDefaultViewport = rfProps.defaultViewport;
-    var convertedDefaultViewport = rawDefaultViewport
-        ? { x: rawDefaultViewport.x, y: rawDefaultViewport.y, zoom: sliderToRfZoom(rawDefaultViewport.zoom) }
-        : undefined;
+    // Fully controlled only when both zoomValue and onZoomChange are provided
+    var isControlledZoom = zoomValueProp != null && onZoomChangeProp != null;
 
-    const [zoomLevel, setZoomLevel] = useState(function () {
-        if (rawDefaultViewport && rawDefaultViewport.zoom != null) return rawDefaultViewport.zoom;
+    const [internalZoom, setInternalZoom] = useState(function () {
+        if (zoomValueProp != null) return zoomValueProp;
         return 33;
     });
 
+    var zoomLevel = isControlledZoom ? zoomValueProp : internalZoom;
+
+    var convertedDefaultViewport = rawDefaultViewport
+        ? { x: rawDefaultViewport.x, y: rawDefaultViewport.y, zoom: sliderToRfZoom(zoomLevel) }
+        : undefined;
+
     const handleZoomSliderChange = useCallback(function (e) {
         var value = Number(e.target.value);
-        setZoomLevel(value);
+        setInternalZoom(value);
+        if (onZoomChangeProp) onZoomChangeProp(value);
         if (reactFlowInstance) {
             var vp = reactFlowInstance.getViewport();
             reactFlowInstance.setViewport({ x: vp.x, y: vp.y, zoom: sliderToRfZoom(value) });
         }
-    }, [reactFlowInstance]);
+    }, [reactFlowInstance, onZoomChangeProp]);
 
     const handleMoveEnd = useCallback(function () {
         if (reactFlowInstance && rfProps.zoomOnScroll !== false) {
             var vp = reactFlowInstance.getViewport();
-            setZoomLevel(rfZoomToSlider(vp.zoom));
+            var newZoom = rfZoomToSlider(vp.zoom);
+            setInternalZoom(newZoom);
+            if (onZoomChangeProp) onZoomChangeProp(newZoom);
         }
         if (rfProps.onMoveEnd) {
             rfProps.onMoveEnd.apply(null, arguments);
@@ -611,7 +623,9 @@ function OrthogonalFlowInner({
                 >
                     {children}
                 </ReactFlow>
-                <ZoomBar zoomLevel={zoomLevel} onChange={handleZoomSliderChange} />
+                {showZoomProp !== false && (
+                    <ZoomBar zoomLevel={zoomLevel} onChange={handleZoomSliderChange} />
+                )}
             </div>
         </EdgeRoutingProvider>
     );

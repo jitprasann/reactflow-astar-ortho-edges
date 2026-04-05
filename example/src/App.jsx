@@ -34,13 +34,14 @@ function nextNodeLabel() {
 
 const STORAGE_KEY = "orthogonal-flow-save";
 
-function saveToStorage(nodes, edges, viewport) {
+function saveToStorage(nodes, edges, viewport, zoom) {
     var data = {
         nodes: nodes,
         edges: edges,
         idCounter: idCounter + 1,
         nodeCounter: nodeCounter + 2,
         viewport: viewport || null,
+        zoom: zoom,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
@@ -56,6 +57,7 @@ function loadFromStorage() {
             nodes: data.nodes,
             edges: data.edges,
             viewport: data.viewport || null,
+            zoom: data.zoom != null ? data.zoom : 33,
         };
     } catch (e) {
         return null;
@@ -148,7 +150,7 @@ function MenuItem({ onClick, children, style: extraStyle }) {
 function getInitialState() {
     var saved = loadFromStorage();
     if (saved) return saved;
-    return { nodes: initialNodes, edges: initialEdges };
+    return { nodes: initialNodes, edges: initialEdges, zoom: 33 };
 }
 
 export default function App() {
@@ -156,6 +158,7 @@ export default function App() {
     const [nodes, setNodes] = useState(initial.nodes);
     const [edges, setEdges] = useState(initial.edges);
     const [readOnly, setReadOnly] = useState(false);
+    const [zoomValue, setZoomValue] = useState(initial.zoom != null ? initial.zoom : 33);
     const [selectedNode, setSelectedNode] = useState(null);
     const [panelInput, setPanelInput] = useState("");
     const flowApi = useOrthogonalFlow();
@@ -178,10 +181,10 @@ export default function App() {
     const handleSave = useCallback(
         function () {
             var viewport = flowApi.getViewport && flowApi.getViewport();
-            saveToStorage(nodes, edges, viewport);
+            saveToStorage(nodes, edges, viewport, zoomValue);
             alert("Saved!");
         },
-        [nodes, edges, flowApi],
+        [nodes, edges, flowApi, zoomValue],
     );
 
     const handleLoad = useCallback(
@@ -190,6 +193,7 @@ export default function App() {
             if (saved) {
                 setNodes(saved.nodes);
                 setEdges(saved.edges);
+                setZoomValue(saved.zoom);
                 if (saved.viewport && flowApi.setViewport) {
                     setTimeout(function () {
                         flowApi.setViewport(saved.viewport);
@@ -677,6 +681,8 @@ export default function App() {
                 }
                 nodeTypes={nodeTypes}
                 autoLayout={true}
+                zoomValue={zoomValue}
+                onZoomChange={setZoomValue}
                 defaultViewport={initial.viewport || undefined}
                 elementsSelectable={!readOnly}
                 nodesConnectable={!readOnly}
