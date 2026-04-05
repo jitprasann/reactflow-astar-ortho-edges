@@ -387,7 +387,9 @@ function OrthogonalFlowInner({
             if (renderNodeMenuRef.current) {
                 extra.renderMenu = () => renderNodeMenuRef.current(n.id);
             }
-            extra.onLabelChange = handleLabelChange;
+            if (onLabelChangeRef.current) {
+                extra.onLabelChange = handleLabelChange;
+            }
             const custom = nodeCallbacksRef.current;
             if (custom) {
                 const keys = Object.keys(custom);
