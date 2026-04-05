@@ -32,6 +32,31 @@ function nextNodeLabel() {
     return `Node ${++nodeCounter}`;
 }
 
+const STORAGE_KEY = "orthogonal-flow-save";
+
+function saveToStorage(nodes, edges) {
+    var data = {
+        nodes: nodes,
+        edges: edges,
+        idCounter: idCounter + 1,
+        nodeCounter: nodeCounter + 2,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadFromStorage() {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    try {
+        var data = JSON.parse(raw);
+        if (data.idCounter) idCounter = data.idCounter;
+        if (data.nodeCounter) nodeCounter = data.nodeCounter;
+        return { nodes: data.nodes, edges: data.edges };
+    } catch (e) {
+        return null;
+    }
+}
+
 // --- Initial graph data (backup — full branch example) ---
 // const rawNodesBackup = [
 //     { id: "start", type: "square", position: { x: 0, y: 0 }, data: { label: "Start", width: 80, height: 80 } },
@@ -58,13 +83,13 @@ const initialNodes = [
     {
         id: "start",
         type: "square",
-        position: { x: 100, y: 100 },
+        position: { x: 150, y: 150 },
         data: { label: "Start", width: 80, height: 80 },
     },
     {
         id: "end",
         type: "square",
-        position: { x: 100, y: 260 },
+        position: { x: 150, y: 310 },
         data: { label: "End", width: 80, height: 80 },
     },
 ];
@@ -115,11 +140,36 @@ function MenuItem({ onClick, children, style: extraStyle }) {
     );
 }
 
+function getInitialState() {
+    var saved = loadFromStorage();
+    if (saved) return saved;
+    return { nodes: initialNodes, edges: initialEdges };
+}
+
 export default function App() {
-    const [nodes, setNodes] = useState(initialNodes);
-    const [edges, setEdges] = useState(initialEdges);
+    var initial = getInitialState();
+    const [nodes, setNodes] = useState(initial.nodes);
+    const [edges, setEdges] = useState(initial.edges);
     const [readOnly, setReadOnly] = useState(false);
     const flowApi = useOrthogonalFlow();
+
+    const handleSave = useCallback(
+        function () {
+            saveToStorage(nodes, edges);
+            alert("Saved!");
+        },
+        [nodes, edges],
+    );
+
+    const handleLoad = useCallback(function () {
+        var saved = loadFromStorage();
+        if (saved) {
+            setNodes(saved.nodes);
+            setEdges(saved.edges);
+        } else {
+            alert("No saved data found.");
+        }
+    }, []);
 
     const handleChange = useCallback(({ nodes: n, edges: e }) => {
         setNodes(n);
@@ -172,7 +222,11 @@ export default function App() {
             return n.id !== nodeId && n.data && n.data.label === newLabel;
         });
         if (duplicate) {
-            alert("Label \"" + newLabel + "\" already exists. Please use a unique label.");
+            alert(
+                'Label "' +
+                    newLabel +
+                    '" already exists. Please use a unique label.',
+            );
             return null;
         }
         return newLabel;
@@ -210,9 +264,7 @@ export default function App() {
                     },
                     parentWithChildCount(context.parentNode, childCount),
                 ],
-                edges: [
-                    { id: nextId("e"), source: parentId, target: nodeId },
-                ],
+                edges: [{ id: nextId("e"), source: parentId, target: nodeId }],
             };
         }
         if (type === "branch") {
@@ -276,10 +328,19 @@ export default function App() {
         if (type === "condition") {
             const condId = nextId("cond");
             const newEdges = [
-                { id: nextId("e"), source: parentId, target: condId, data: { label: "Condition" } },
+                {
+                    id: nextId("e"),
+                    source: parentId,
+                    target: condId,
+                    data: { label: "Condition" },
+                },
             ];
             if (context && context.mergeNodeId) {
-                newEdges.push({ id: nextId("e"), source: condId, target: context.mergeNodeId });
+                newEdges.push({
+                    id: nextId("e"),
+                    source: condId,
+                    target: context.mergeNodeId,
+                });
             }
             return {
                 nodes: [
@@ -301,7 +362,11 @@ export default function App() {
             // Get source node to demonstrate updating existing nodes
             var allNodes = flowApi.getNodes && flowApi.getNodes();
             var allEdges = flowApi.getEdges && flowApi.getEdges();
-            var sourceNode = allNodes && allNodes.find(function (n) { return n.id === sourceId; });
+            var sourceNode =
+                allNodes &&
+                allNodes.find(function (n) {
+                    return n.id === sourceId;
+                });
 
             if (type === "node") {
                 const nodeId = nextId("node");
@@ -318,8 +383,12 @@ export default function App() {
                 ];
                 // Update source node label with child count
                 if (sourceNode && allEdges) {
-                    var currentChildren = allEdges.filter(function (e) { return e.source === sourceId; }).length;
-                    returnedNodes.push(parentWithChildCount(sourceNode, currentChildren));
+                    var currentChildren = allEdges.filter(function (e) {
+                        return e.source === sourceId;
+                    }).length;
+                    returnedNodes.push(
+                        parentWithChildCount(sourceNode, currentChildren),
+                    );
                 }
                 return {
                     nodes: returnedNodes,
@@ -367,8 +436,12 @@ export default function App() {
                     },
                 ];
                 if (sourceNode && allEdges) {
-                    var currentChildren = allEdges.filter(function (e) { return e.source === sourceId; }).length;
-                    branchNodes.push(parentWithChildCount(sourceNode, currentChildren));
+                    var currentChildren = allEdges.filter(function (e) {
+                        return e.source === sourceId;
+                    }).length;
+                    branchNodes.push(
+                        parentWithChildCount(sourceNode, currentChildren),
+                    );
                 }
                 return {
                     nodes: branchNodes,
@@ -407,11 +480,19 @@ export default function App() {
     const renderNodeMenu = useCallback(
         (nodeId) => {
             var allNodes = flowApi.getNodes && flowApi.getNodes();
-            var node = allNodes && allNodes.find(function (n) { return n.id === nodeId; });
+            var node =
+                allNodes &&
+                allNodes.find(function (n) {
+                    return n.id === nodeId;
+                });
             if (node && node.id === "end") return null;
             var isBranch = node && node.data && node.data.isBranch;
             if (isBranch) {
-                return { onClick: function() { flowApi.addNode(nodeId, "condition"); } };
+                return {
+                    onClick: function () {
+                        flowApi.addNode(nodeId, "condition");
+                    },
+                };
             }
             return (
                 <div>
@@ -432,7 +513,12 @@ export default function App() {
                     {flowApi.getNodes &&
                         flowApi
                             .getNodes()
-                            .filter(function (n) { return n.id !== nodeId && !(n.data && n.data.isMerge); })
+                            .filter(function (n) {
+                                return (
+                                    n.id !== nodeId &&
+                                    !(n.data && n.data.isMerge)
+                                );
+                            })
                             .map((n) => (
                                 <MenuItem
                                     key={n.id}
@@ -453,14 +539,24 @@ export default function App() {
     const renderEdgeMenu = useCallback(
         (edgeId, sourceId, targetId) => {
             var allNodes = flowApi.getNodes && flowApi.getNodes();
-            var sourceNode = allNodes && allNodes.find(function (n) { return n.id === sourceId; });
+            var sourceNode =
+                allNodes &&
+                allNodes.find(function (n) {
+                    return n.id === sourceId;
+                });
             if (sourceNode && sourceNode.data && sourceNode.data.isBranch) {
-                return { onClick: function() { flowApi.addNodeInline(edgeId, "node"); } };
+                return {
+                    onClick: function () {
+                        flowApi.addNodeInline(edgeId, "node");
+                    },
+                };
             }
             return (
                 <div>
                     <div style={sectionHeaderStyle}>Insert between</div>
-                    <MenuItem onClick={() => flowApi.addNodeInline(edgeId, "node")}>
+                    <MenuItem
+                        onClick={() => flowApi.addNodeInline(edgeId, "node")}
+                    >
                         Add Node
                     </MenuItem>
                     <MenuItem
@@ -475,13 +571,44 @@ export default function App() {
         [flowApi],
     );
 
+    const handleFirstEdgeLabelChange = useCallback((e) => {
+        var newLabel = e.target.value;
+        setEdges(function (eds) {
+            if (eds.length === 0) return eds;
+            var first = eds[0];
+            var updatedFirst = {
+                ...first,
+                data: { ...(first.data || {}), label: newLabel },
+            };
+            return [updatedFirst].concat(eds.slice(1));
+        });
+    }, []);
+
+    var firstEdgeLabel =
+        (edges.length > 0 && edges[0].data && edges[0].data.label) || "";
+
     return (
         <div style={{ width: "100vw", height: "100vh" }}>
             <div className="controls-panel">
                 <button onClick={() => flowApi.layout()}>Re-Layout</button>
-                <button onClick={() => setReadOnly(function (v) { return !v; })}>
+                <button
+                    onClick={() =>
+                        setReadOnly(function (v) {
+                            return !v;
+                        })
+                    }
+                >
                     {readOnly ? "Edit Mode" : "Read-Only"}
                 </button>
+                <button onClick={handleSave}>Save</button>
+                <button onClick={handleLoad}>Load</button>
+                <input
+                    type="text"
+                    value={firstEdgeLabel}
+                    onChange={handleFirstEdgeLabelChange}
+                    placeholder="First edge label"
+                    style={{ marginLeft: 8, padding: "4px 8px" }}
+                />
             </div>
             <OrthogonalFlow
                 api={flowApi}
@@ -491,7 +618,9 @@ export default function App() {
                 onNodesChange={handleNodesChange}
                 onEdgesChange={handleEdgesChange}
                 onCreateNode={readOnly ? undefined : handleCreateNode}
-                onCreateNodeInline={readOnly ? undefined : handleCreateNodeInline}
+                onCreateNodeInline={
+                    readOnly ? undefined : handleCreateNodeInline
+                }
                 onConnectNodes={readOnly ? undefined : handleConnectNodes}
                 onDeleteNode={readOnly ? undefined : handleDeleteNode}
                 onDeleteEdge={readOnly ? undefined : handleDeleteEdge}
@@ -499,14 +628,22 @@ export default function App() {
                 renderNodeMenu={readOnly ? undefined : renderNodeMenu}
                 renderEdgeMenu={readOnly ? undefined : renderEdgeMenu}
                 deleteKeyCode={readOnly ? null : "Delete"}
-                edgeToolbar={readOnly ? {
-                    deleteButton: { hidden: true },
-                    addButton: { hidden: true },
-                } : undefined}
-                nodeCallbacks={readOnly ? { hideDeleteButton: true } : {
-                    onChangeType: handleChangeType,
-                    availableTypes: ["square", "branch"],
-                }}
+                edgeToolbar={
+                    readOnly
+                        ? {
+                              deleteButton: { hidden: true },
+                              addButton: { hidden: true },
+                          }
+                        : undefined
+                }
+                nodeCallbacks={
+                    readOnly
+                        ? { hideDeleteButton: true }
+                        : {
+                              onChangeType: handleChangeType,
+                              availableTypes: ["square", "branch"],
+                          }
+                }
                 nodeTypes={nodeTypes}
                 autoLayout={true}
                 elementsSelectable={!readOnly}
