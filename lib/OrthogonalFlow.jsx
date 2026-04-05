@@ -11,6 +11,7 @@ import OrthogonalEdge from "./OrthogonalEdge.jsx";
 import ActionEdge from "./ActionEdge.jsx";
 import ActionNode from "./ActionNode.jsx";
 import EdgeRoutingProvider from "./EdgeRoutingProvider.jsx";
+import ZoomBar from "./ZoomBar.jsx";
 import { getVisibleGraph } from "./layoutEngine.js";
 import { DEFAULTS, resolveNodeX, resolveNodeY } from "./defaults.js";
 import { removeDanglingEdges, reindexAllHandles } from "./graphUtils.js";
@@ -26,6 +27,17 @@ import {
 
 const builtInEdgeTypes = { orthogonal: OrthogonalEdge, __action: ActionEdge };
 const builtInNodeTypes = { __action: ActionNode };
+
+var RF_MIN_ZOOM = 0.5;
+var RF_MAX_ZOOM = 2;
+
+function rfZoomToSlider(rfZoom) {
+    return Math.round(((rfZoom - RF_MIN_ZOOM) / (RF_MAX_ZOOM - RF_MIN_ZOOM)) * 100);
+}
+
+function sliderToRfZoom(slider) {
+    return RF_MIN_ZOOM + (slider / 100) * (RF_MAX_ZOOM - RF_MIN_ZOOM);
+}
 
 function buildActionNodesAndEdges(finalNodes, outputCounts, hoveredNodeId, renderNodeMenuRef, cfg, onHoverParent, onUnhoverParent) {
     const actionNodes = [];
@@ -308,6 +320,15 @@ function OrthogonalFlowInner({
         api.deleteNode = (nodeId) => handleDeleteNode(nodeId);
         api.layout = () => handleLayout();
         api.fitView = () => reactFlowInstance && reactFlowInstance.fitView();
+        api.getViewport = function () {
+            if (!reactFlowInstance) return null;
+            var vp = reactFlowInstance.getViewport();
+            return { x: vp.x, y: vp.y, zoom: rfZoomToSlider(vp.zoom) };
+        };
+        api.setViewport = function (vp) {
+            if (!reactFlowInstance || !vp) return;
+            reactFlowInstance.setViewport({ x: vp.x, y: vp.y, zoom: sliderToRfZoom(vp.zoom) });
+        };
         api.getNodes = () => nodesRef.current;
         api.getEdges = () => edgesRef.current;
     }, [api, handleAddNode, handleAddNodeInline, handleConnectToExisting, handleDeleteEdge, handleDeleteNode, handleLayout, reactFlowInstance]);
@@ -497,25 +518,59 @@ function OrthogonalFlowInner({
         }
     }, [fireChange]);
 
+    var rawDefaultViewport = rfProps.defaultViewport;
+    var convertedDefaultViewport = rawDefaultViewport
+        ? { x: rawDefaultViewport.x, y: rawDefaultViewport.y, zoom: sliderToRfZoom(rawDefaultViewport.zoom) }
+        : undefined;
+
+    const [zoomLevel, setZoomLevel] = useState(function () {
+        if (rawDefaultViewport && rawDefaultViewport.zoom != null) return rawDefaultViewport.zoom;
+        return 33;
+    });
+
+    const handleZoomSliderChange = useCallback(function (e) {
+        var value = Number(e.target.value);
+        setZoomLevel(value);
+        if (reactFlowInstance) {
+            var vp = reactFlowInstance.getViewport();
+            reactFlowInstance.setViewport({ x: vp.x, y: vp.y, zoom: sliderToRfZoom(value) });
+        }
+    }, [reactFlowInstance]);
+
+    const handleMoveEnd = useCallback(function () {
+        if (reactFlowInstance && rfProps.zoomOnScroll !== false) {
+            var vp = reactFlowInstance.getViewport();
+            setZoomLevel(rfZoomToSlider(vp.zoom));
+        }
+        if (rfProps.onMoveEnd) {
+            rfProps.onMoveEnd.apply(null, arguments);
+        }
+    }, [reactFlowInstance, rfProps.onMoveEnd, rfProps.zoomOnScroll]);
+
     return (
         <EdgeRoutingProvider config={config}>
-            <ReactFlow
-                nodes={visibleNodes}
-                edges={visibleEdges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onConnectStart={onConnectStart}
-                onConnectEnd={onConnectEnd}
-                onNodeMouseEnter={onNodeMouseEnter}
-                onNodeMouseLeave={onNodeMouseLeave}
-                nodeTypes={mergedNodeTypes}
-                edgeTypes={mergedEdgeTypes}
-                deleteKeyCode={deleteKeyCodeProp !== undefined ? deleteKeyCodeProp : "Delete"}
-                {...rfProps}
-            >
-                {children}
-            </ReactFlow>
+            <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <ReactFlow
+                    nodes={visibleNodes}
+                    edges={visibleEdges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onConnectStart={onConnectStart}
+                    onConnectEnd={onConnectEnd}
+                    onNodeMouseEnter={onNodeMouseEnter}
+                    onNodeMouseLeave={onNodeMouseLeave}
+                    nodeTypes={mergedNodeTypes}
+                    edgeTypes={mergedEdgeTypes}
+                    deleteKeyCode={deleteKeyCodeProp !== undefined ? deleteKeyCodeProp : "Delete"}
+                    {...rfProps}
+                    defaultViewport={convertedDefaultViewport}
+                    onMoveEnd={rfProps.zoomOnScroll !== false ? handleMoveEnd : rfProps.onMoveEnd}
+                >
+                    {children}
+                </ReactFlow>
+                <ZoomBar zoomLevel={zoomLevel} onChange={handleZoomSliderChange} />
+            </div>
         </EdgeRoutingProvider>
     );
 }

@@ -34,12 +34,13 @@ function nextNodeLabel() {
 
 const STORAGE_KEY = "orthogonal-flow-save";
 
-function saveToStorage(nodes, edges) {
+function saveToStorage(nodes, edges, viewport) {
     var data = {
         nodes: nodes,
         edges: edges,
         idCounter: idCounter + 1,
         nodeCounter: nodeCounter + 2,
+        viewport: viewport || null,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
@@ -51,7 +52,11 @@ function loadFromStorage() {
         var data = JSON.parse(raw);
         if (data.idCounter) idCounter = data.idCounter;
         if (data.nodeCounter) nodeCounter = data.nodeCounter;
-        return { nodes: data.nodes, edges: data.edges };
+        return {
+            nodes: data.nodes,
+            edges: data.edges,
+            viewport: data.viewport || null,
+        };
     } catch (e) {
         return null;
     }
@@ -155,21 +160,30 @@ export default function App() {
 
     const handleSave = useCallback(
         function () {
-            saveToStorage(nodes, edges);
+            var viewport = flowApi.getViewport && flowApi.getViewport();
+            saveToStorage(nodes, edges, viewport);
             alert("Saved!");
         },
-        [nodes, edges],
+        [nodes, edges, flowApi],
     );
 
-    const handleLoad = useCallback(function () {
-        var saved = loadFromStorage();
-        if (saved) {
-            setNodes(saved.nodes);
-            setEdges(saved.edges);
-        } else {
-            alert("No saved data found.");
-        }
-    }, []);
+    const handleLoad = useCallback(
+        function () {
+            var saved = loadFromStorage();
+            if (saved) {
+                setNodes(saved.nodes);
+                setEdges(saved.edges);
+                if (saved.viewport && flowApi.setViewport) {
+                    setTimeout(function () {
+                        flowApi.setViewport(saved.viewport);
+                    }, 50);
+                }
+            } else {
+                alert("No saved data found.");
+            }
+        },
+        [flowApi],
+    );
 
     const handleChange = useCallback(({ nodes: n, edges: e }) => {
         setNodes(n);
@@ -646,6 +660,7 @@ export default function App() {
                 }
                 nodeTypes={nodeTypes}
                 autoLayout={true}
+                defaultViewport={initial.viewport || undefined}
                 elementsSelectable={!readOnly}
                 nodesConnectable={!readOnly}
                 nodesDraggable={!readOnly}
