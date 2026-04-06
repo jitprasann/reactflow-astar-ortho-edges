@@ -118,20 +118,24 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             transform: 'translateX(-50%)',
             maxWidth: width,
             textAlign: 'center',
-            overflow: editing ? 'visible' : 'hidden',
-            display: editing ? 'block' : '-webkit-box',
-            WebkitLineClamp: editing ? undefined : 2,
-            WebkitBoxOrient: editing ? undefined : 'vertical',
-            textOverflow: editing ? undefined : 'ellipsis',
             wordBreak: 'break-word',
             marginBottom: 4,
             fontSize: 12,
             fontFamily: 'sans-serif',
             lineHeight: 1.3,
-            pointerEvents: editing ? 'all' : 'auto',
+            ...(editing
+              ? { overflow: 'visible', display: 'block', pointerEvents: 'all' }
+              : {
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  textOverflow: 'ellipsis',
+                  pointerEvents: 'auto',
+                }),
           }}
-          role={labelEditable && data && data.onLabelChange ? 'button' : undefined}
-          tabIndex={labelEditable && data && data.onLabelChange ? 0 : undefined}
+          role="button"
+          tabIndex={0}
           onDoubleClick={startEditing}
           onKeyDown={handleLabelKeyDown}>
           {editing ? (
