@@ -67,6 +67,20 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
     }
   }, [commitEdit, label]);
 
+  const startEditing = useCallback(() => {
+    if (labelEditable && data && data.onLabelChange) {
+      setDraft(label);
+      setEditing(true);
+    }
+  }, [labelEditable, data, label]);
+
+  const handleLabelKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      startEditing();
+    }
+  }, [startEditing]);
+
   let wrapperClass = 'eq-pipeline-compact-node-wrapper';
   if (className) wrapperClass += ' ' + className;
   if (selected) wrapperClass += ' selected';
@@ -115,12 +129,10 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             lineHeight: 1.3,
             pointerEvents: editing ? 'all' : 'auto',
           }}
-          onDoubleClick={() => {
-            if (labelEditable && data && data.onLabelChange) {
-              setDraft(label);
-              setEditing(true);
-            }
-          }}>
+          role={labelEditable && data && data.onLabelChange ? 'button' : undefined}
+          tabIndex={labelEditable && data && data.onLabelChange ? 0 : undefined}
+          onDoubleClick={startEditing}
+          onKeyDown={handleLabelKeyDown}>
           {editing ? (
             <input
               className="eq-pipeline-compact-node-label-input"
