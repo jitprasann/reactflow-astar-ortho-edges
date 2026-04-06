@@ -3,6 +3,8 @@ import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { DEFAULTS } from './defaults.js';
 import './nodeShell.css';
 
+const CENTER_X_TRANSFORM = 'translateX(-50%)';
+
 /**
  * NodeShell — generic wrapper for orthogonal-flow nodes.
  *
@@ -41,14 +43,22 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
   }, [inputs, outputs, id, updateNodeInternals]);
 
   const label = data.label || '';
-  var labelEditable = data.editable != null ? data.editable : true;
+  const labelEditable = data.editable != null ? data.editable : true;
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(label);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (!editing) setDraft(label);
   }, [label, editing]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
 
   const commitEdit = useCallback(() => {
     setEditing(false);
@@ -80,6 +90,11 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
       e.preventDefault();
       startEditing();
     }
+  }, [startEditing]);
+
+  const handleLabelClick = useCallback((e) => {
+    if (e.target !== e.currentTarget) return;
+    if (e.detail === 2) startEditing();
   }, [startEditing]);
 
   let wrapperClass = 'eq-pipeline-compact-node-wrapper';
@@ -115,7 +130,7 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             position: 'absolute',
             bottom: '100%',
             left: '50%',
-            transform: 'translateX(-50%)',
+            transform: CENTER_X_TRANSFORM,
             maxWidth: width,
             textAlign: 'center',
             wordBreak: 'break-word',
@@ -136,16 +151,16 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
           }}
           role="button"
           tabIndex={0}
-          onDoubleClick={startEditing}
+          onClick={handleLabelClick}
           onKeyDown={handleLabelKeyDown}>
           {editing ? (
             <input
+              ref={inputRef}
               className="eq-pipeline-compact-node-label-input"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commitEdit}
               onKeyDown={handleKeyDown}
-              autoFocus
             />
           ) : label}
         </div>
@@ -165,7 +180,7 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             className="eq-pipeline-compact-node-handle"
             style={{
               left: `calc(50% + ${offset}px)`,
-              transform: 'translateX(-50%)',
+              transform: CENTER_X_TRANSFORM,
             }}
           />
         );
@@ -183,7 +198,7 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
             className="eq-pipeline-compact-node-handle"
             style={{
               left: `calc(50% + ${offset}px)`,
-              transform: 'translateX(-50%)',
+              transform: CENTER_X_TRANSFORM,
             }}
           />
         );
@@ -197,7 +212,7 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
         className="eq-pipeline-compact-node-action-output-handle"
         style={{
           left: '50%',
-          transform: 'translateX(-50%)',
+          transform: CENTER_X_TRANSFORM,
           bottom: 0,
         }}
       />
