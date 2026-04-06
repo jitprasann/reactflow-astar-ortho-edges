@@ -75,6 +75,7 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
   }, [labelEditable, data, label]);
 
   const handleLabelKeyDown = useCallback((e) => {
+    if (e.target !== e.currentTarget) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       startEditing();
