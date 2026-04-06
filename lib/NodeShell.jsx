@@ -5,6 +5,34 @@ import './nodeShell.css';
 
 const CENTER_X_TRANSFORM = 'translateX(-50%)';
 
+const LABEL_BASE_STYLE = {
+  position: 'absolute',
+  bottom: '100%',
+  left: '50%',
+  transform: CENTER_X_TRANSFORM,
+  textAlign: 'center',
+  wordBreak: 'break-word',
+  marginBottom: 4,
+  fontSize: 12,
+  fontFamily: 'sans-serif',
+  lineHeight: 1.3,
+};
+
+const LABEL_EDITING_STYLE = {
+  overflow: 'visible',
+  display: 'block',
+  pointerEvents: 'all',
+};
+
+const LABEL_DEFAULT_STYLE = {
+  overflow: 'hidden',
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  textOverflow: 'ellipsis',
+  pointerEvents: 'auto',
+};
+
 /**
  * NodeShell — generic wrapper for orthogonal-flow nodes.
  *
@@ -115,6 +143,8 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
     ...style,
   };
 
+  const labelStateStyle = editing ? LABEL_EDITING_STYLE : LABEL_DEFAULT_STYLE;
+
   return (
     <div
       className={wrapperClass}
@@ -127,27 +157,9 @@ const NodeShell = memo(function NodeShell({ id, data, selected, children, classN
         <div
           className="eq-pipeline-canvas-node-label"
           style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: '50%',
-            transform: CENTER_X_TRANSFORM,
+            ...LABEL_BASE_STYLE,
             maxWidth: width,
-            textAlign: 'center',
-            wordBreak: 'break-word',
-            marginBottom: 4,
-            fontSize: 12,
-            fontFamily: 'sans-serif',
-            lineHeight: 1.3,
-            ...(editing
-              ? { overflow: 'visible', display: 'block', pointerEvents: 'all' }
-              : {
-                  overflow: 'hidden',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  textOverflow: 'ellipsis',
-                  pointerEvents: 'auto',
-                }),
+            ...labelStateStyle,
           }}
           role="button"
           tabIndex={0}
